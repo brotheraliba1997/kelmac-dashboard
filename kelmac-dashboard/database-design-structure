@@ -1,0 +1,93 @@
+src/
+│
+├── app.module.ts
+├── main.ts
+│
+├── config/
+│   ├── database.config.ts         # MongoDB connection config
+│   ├── jwt.config.ts              # JWT secret + expiry setup
+│   └── env.validation.ts          # Validate .env values using Joi
+│
+├── common/
+│   ├── decorators/                # Custom decorators (e.g. Roles, CurrentUser)
+│   ├── guards/                    # Auth & Role guards
+│   ├── interceptors/              # Response/Logging interceptors
+│   ├── filters/                   # Exception filters
+│   ├── dtos/                      # Shared DTOs
+│   └── utils/                     # Utility functions (e.g. slugify, time)
+│
+├── auth/
+│   ├── auth.module.ts
+│   ├── auth.controller.ts
+│   ├── auth.service.ts
+│   ├── dto/
+│   │   ├── login.dto.ts
+│   │   └── register.dto.ts
+│   └── strategies/
+│       ├── jwt.strategy.ts
+│       └── local.strategy.ts
+│
+├── users/
+│   ├── users.module.ts
+│   ├── users.controller.ts
+│   ├── users.service.ts
+│   ├── schemas/user.schema.ts
+│   └── dto/
+│       └── update-user.dto.ts
+│
+├── courses/
+│   ├── courses.module.ts
+│   ├── courses.controller.ts
+│   ├── courses.service.ts
+│   ├── schemas/course.schema.ts
+│   ├── schemas/enrollment.schema.ts
+│   └── dto/
+│       ├── create-course.dto.ts
+│       └── update-course.dto.ts
+│
+├── blogs/
+│   ├── blogs.module.ts
+│   ├── blogs.controller.ts
+│   ├── blogs.service.ts
+│   ├── schemas/blog.schema.ts
+│   └── dto/
+│       └── create-blog.dto.ts
+│
+├── offers/
+│   ├── offers.module.ts
+│   ├── offers.controller.ts
+│   ├── offers.service.ts
+│   ├── schemas/offer.schema.ts
+│   └── dto/
+│       └── create-offer.dto.ts
+│
+├── certificates/
+│   ├── certificates.module.ts
+│   ├── certificates.controller.ts
+│   ├── certificates.service.ts
+│   ├── schemas/certificate.schema.ts
+│   └── dto/
+│       └── generate-certificate.dto.ts
+│
+├── payments/
+│   ├── payments.module.ts
+│   ├── payments.controller.ts
+│   ├── payments.service.ts
+│   ├── schemas/payment.schema.ts
+│   └── dto/
+│       └── create-payment.dto.ts
+│
+├── companies/
+│   ├── companies.module.ts
+│   ├── companies.controller.ts
+│   ├── companies.service.ts
+│   ├── schemas/company.schema.ts
+│   └── dto/
+│       └── create-company.dto.ts
+│
+└── admin/
+    ├── admin.module.ts
+    ├── admin.controller.ts
+    ├── admin.service.ts
+    └── dto/
+        └── manage-user.dto.ts

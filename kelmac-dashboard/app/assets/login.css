@@ -1,0 +1,98 @@
+
+
+
+.newloginbg{
+    background: linear-gradient(89.54deg, #1CAA9E 1.05%, #1CAA9E 99.44%);
+}
+.login-card{
+    background-color: #fff;
+    box-shadow: 0px 0px 4px 4px #00000040;
+    padding-top: 30px;
+    border-radius: 3px;
+}
+img{
+    width: 100%;
+    margin: auto;
+    height: auto;
+}
+.loginlogo {
+    text-align: center;
+}
+.loginlogo img{
+    width: 45%;
+    height: auto;
+    margin: auto;
+}
+.paynowlogo{
+    text-align: center;
+}
+.paynowlogo{
+    width: 20%;
+    height: auto;
+    margin: auto;
+}
+.loginlogo h3{
+    font-family: "Inter", sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 43.57px;
+    color: #0F5167;
+    text-align: start;
+}
+
+.input-group-text {
+    border-top-right-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+}
+.input-group-text i{
+    font-size: 18px;
+}
+.coun-text{
+    text-align: center;
+}
+.coun-text p{
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.form-label{
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2F2F2F;
+}
+.form-check-label{
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2F2F2F;
+}
+.forgetlink{
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2F2F2F;
+}
+.forgetlink:hover{
+    color: #fff;
+}
+.input-group-text {
+    background-color: #fff;
+    border-right: 0px;
+}
+.input-group>:not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+    border-left: 0px;
+}
+.input-group-text i{
+    color: #26374D;
+}
+.sinuptext p{
+    font-size: 14px;
+    font-weight: 600;
+}
+.sinuptext p a{
+    font-size: 14px;
+    text-decoration: none;
+    color: #407CC3;
+    font-weight: 600;
+}

@@ -1,0 +1,78 @@
+src/
+│
+├── app/
+│   ├── layout.tsx                # Root layout (sidebar, header, global css)
+│   ├── page.tsx                  # Homepage (Dashboard)
+│   │
+│   ├── auth/
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   └── forgot-password/page.tsx
+│   │
+│   ├── courses/
+│   │   ├── page.tsx              # List all courses
+│   │   ├── [id]/page.tsx         # Single course details
+│   │   ├── create/page.tsx       # Instructor course create form
+│   │   └── enrollments/page.tsx  # Student enrolled courses
+│   │
+│   ├── blogs/
+│   │   ├── page.tsx
+│   │   ├── [id]/page.tsx
+│   │   └── create/page.tsx
+│   │
+│   ├── offers/
+│   │   ├── page.tsx
+│   │   └── [id]/page.tsx
+│   │
+│   ├── payments/
+│   │   └── page.tsx              # Payment checkout
+│   │
+│   ├── certificates/
+│   │   ├── page.tsx              # All user certificates
+│   │   └── [id]/page.tsx         # View single certificate
+│   │
+│   ├── companies/
+│   │   ├── page.tsx              # Corporate Dashboard
+│   │   └── manage/page.tsx
+│   │
+│   ├── admin/
+│   │   ├── dashboard/page.tsx
+│   │   ├── users/page.tsx
+│   │   ├── courses/page.tsx
+│   │   ├── blogs/page.tsx
+│   │   └── offers/page.tsx
+│   │
+│   └── not-found.tsx             # 404 page
+│
+├── components/
+│   ├── layout/
+│   │   ├── Sidebar.tsx
+│   │   ├── Navbar.tsx
+│   │   └── Footer.tsx
+│   │
+│   ├── forms/
+│   │   ├── InputField.tsx
+│   │   └── SelectField.tsx
+│   │
+│   ├── cards/
+│   │   ├── CourseCard.tsx
+│   │   ├── BlogCard.tsx
+│   │   └── OfferCard.tsx
+│   │
+│   └── shared/
+│       ├── Spinner.tsx
+│       ├── Modal.tsx
+│       ├── ProtectedRoute.tsx
+│       └── Pagination.tsx
+│
+├── store/
+│   ├── index.ts                  # combine all slices
+│   ├── api/
+│   │   ├── baseApi.ts            # RTK base API setup
+│   │   ├── authApi.ts
+│   │   ├── userApi.ts
+│   │   ├── courseApi.ts
+│   │   ├── blogApi.ts
+│   │   ├── offerApi.ts
+│   │   ├── paymentApi.ts
+│   │   └── certificateAp
