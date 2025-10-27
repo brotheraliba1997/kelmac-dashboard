@@ -72,11 +72,11 @@ function Header() {
                   <a href="#">
                     <div className="media d-flex">
                       <span className="avatar avatar-sm">
-                        <img
+                        {/* <img
                           className="avatar-img rounded-circle"
                           alt=""
                           src="assets/img/profiles/avatar-02.jpg"
-                        />
+                        /> */}
                       </span>
                       <div className="media-body">
                         <p className="noti-details">
@@ -95,11 +95,11 @@ function Header() {
                   <a href="#">
                     <div className="media d-flex">
                       <span className="avatar avatar-sm">
-                        <img
+                        {/* <img
                           className="avatar-img rounded-circle"
                           alt=""
                           src="assets/img/profiles/avatar-03.jpg"
-                        />
+                        /> */}
                       </span>
                       <div className="media-body">
                         <p className="noti-details">
@@ -139,11 +139,11 @@ function Header() {
                   <a href="#">
                     <div className="media d-flex">
                       <span className="avatar avatar-sm">
-                        <img
+                        {/* <img
                           className="avatar-img rounded-circle"
                           alt=""
                           src="assets/img/profiles/avatar-04.jpg"
-                        />
+                        /> */}
                       </span>
                       <div className="media-body">
                         <p className="noti-details">
@@ -193,7 +193,7 @@ function Header() {
             data-bs-toggle="dropdown"
           >
             <span className="user-img">
-              <img src="assets/img/avatar-12.jpg" alt="" />
+              {/* <img src="assets/img/avatar-12.jpg" alt="" /> */}
               <span className="status online" />
             </span>
             <span>Super Admin</span>
