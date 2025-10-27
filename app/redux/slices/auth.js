@@ -9,21 +9,18 @@ const user =
       : null
     : null;
 
-const tokens =
+const token =
   typeof window !== "undefined"
-    ? (() => {
-        const item = localStorage.getItem("tokens");
-        try {
-          return item ? JSON.parse(item) : null;
-        } catch {
-          return null;
-        }
-      })()
+    ? localStorage.getItem("token")
+      ? JSON.parse(localStorage.getItem("token"))
+      : null
     : null;
 
+
+    
 const initialState = {
   user,
-  tokens,
+  token,
 
   isAdmin: user?.role == "admin" ? true : false,
   isStudent: user?.role == "student" ? true : false,
@@ -36,8 +33,8 @@ const slice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
-      state.tokens = null;
-      localStorage.removeItem("tokens");
+      state.token = null;
+      localStorage.removeItem("token");
       localStorage.removeItem("user");
       // localStorage.removeItem("userName");
     },
@@ -54,9 +51,10 @@ const slice = createSlice({
           state.isAdmin = payload.user.role == "admin";
           state.isStudent = payload.user.role == "student";
           state.isInstructor = payload.user.role == "instructor";
-          state.tokens = payload.tokens;
+          state.token = payload.token;
           localStorage.setItem("user", JSON.stringify(payload.user));
-          localStorage.setItem("tokens", JSON.stringify(payload.tokens)); // Corrected from 'tokens'
+          localStorage.setItem("token", JSON.stringify(payload.token));
+          console.log(payload.token, "payload.token") // Corrected from 'tokens'
         }
       )
 

@@ -11,7 +11,7 @@ import Image from "next/image";
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const [loginUser, { isLoading, error }] = useLoginUserMutation();
-  const { tokens, user } = useSelector((state: any) => state.auth);
+  const { token, user } = useSelector((state: any) => state.auth);
 
   const [form, setForm] = useState({
     email: "",
@@ -21,8 +21,8 @@ const LoginPage: React.FC = () => {
 
   // Auto redirect if already logged in
   useEffect(() => {
-    if (tokens && user) router.push("/dashboard");
-  }, [tokens, user, router]);
+    if (token && user) router.push("/dashboard");
+  }, [token, user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
