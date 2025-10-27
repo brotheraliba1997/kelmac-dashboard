@@ -7,6 +7,6 @@ import { Provider } from "react-redux";
 
 /* Instruments */
 
-export const ReduxProvider = (props) => {
+export const ReduxProvider = (props:any) => {
   return <Provider store={store}>{props.children}</Provider>;
 };
