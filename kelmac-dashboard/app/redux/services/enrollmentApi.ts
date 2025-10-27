@@ -1,20 +1,24 @@
-import { baseApi } from './baseApi';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuth } from "./api";
 
-export const enrollmentApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
+export const enrollmentApi = createApi({
+  reducerPath: "enrollmentApi",
+  baseQuery: baseQueryWithAuth,
+  endpoints: (builder: any) => ({
     enrollInCourse: builder.mutation({
-      query: (courseId) => ({
+      query: (courseId: any) => ({
         url: `/enrollments/${courseId}`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: ['Course', 'User'],
+      invalidatesTags: ["Course", "User"],
     }),
 
     getUserEnrollments: builder.query({
-      query: () => '/enrollments/me',
-      providesTags: ['User', 'Course'],
+      query: () => "/enrollments/me",
+      providesTags: ["User", "Course"],
     }),
   }),
 });
 
-export const { useEnrollInCourseMutation, useGetUserEnrollmentsQuery } = enrollmentApi;
+export const { useEnrollInCourseMutation, useGetUserEnrollmentsQuery } =
+  enrollmentApi;

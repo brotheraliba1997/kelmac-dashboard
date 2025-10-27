@@ -1,4 +1,5 @@
 "use client";
+
 import DotsLoader from "../loaders/dotsLoader";
 import TableHead from "./tableHead";
 import TablePagination from "./tablePagination";
@@ -10,7 +11,7 @@ function Table({
   title,
   columns,
   dataSource,
-  onRowClick,
+ 
   isLoading,
   totalPages,
   totalEntries,

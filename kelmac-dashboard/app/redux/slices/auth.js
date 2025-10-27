@@ -11,9 +11,14 @@ const user =
 
 const tokens =
   typeof window !== "undefined"
-    ? localStorage.getItem("tokens")
-      ? JSON.parse(localStorage.getItem("tokens"))
-      : null
+    ? (() => {
+        const item = localStorage.getItem("tokens");
+        try {
+          return item ? JSON.parse(item) : null;
+        } catch {
+          return null;
+        }
+      })()
     : null;
 
 const initialState = {
@@ -21,8 +26,8 @@ const initialState = {
   tokens,
 
   isAdmin: user?.role == "admin" ? true : false,
-  isClient: user?.role == "client" ? true : false,
-  isInterpreter: user?.role == "interpreter" ? true : false,
+  isStudent: user?.role == "student" ? true : false,
+  isInstructor: user?.role == "instructor" ? true : false,
 };
 
 const slice = createSlice({
@@ -47,8 +52,8 @@ const slice = createSlice({
         (state, { payload }) => {
           state.user = payload.user;
           state.isAdmin = payload.user.role == "admin";
-          state.isClient = payload.user.role == "client";
-          state.isInterpreter = payload.user.role == "interpreter";
+          state.isStudent = payload.user.role == "student";
+          state.isInstructor = payload.user.role == "instructor";
           state.tokens = payload.tokens;
           localStorage.setItem("user", JSON.stringify(payload.user));
           localStorage.setItem("tokens", JSON.stringify(payload.tokens)); // Corrected from 'tokens'
@@ -64,25 +69,25 @@ const slice = createSlice({
       )
       .addMatcher(authAPI.endpoints.loginUser.matchRejected, (state) => {
         state.auth = null;
-      })
-
-      .addMatcher(
-        userAPI.endpoints.checkUserAuth.matchFulfilled,
-        (state, { payload }) => {
-          state.user = payload;
-          state.isAdmin = payload.role == "admin";
-          state.isClient = payload.role == "client";
-          state.isInterpreter = payload.role == "interpreter";
-          localStorage.setItem("user", JSON.stringify(payload));
-        }
-      )
-      .addMatcher(userAPI.endpoints.checkUserAuth.matchRejected, (state) => {
-        state.user = null;
-        state.tokens = null;
-        localStorage.removeItem("tokens");
-        localStorage.removeItem("user");
-        // localStorage.removeItem("userName");
       });
+
+    // .addMatcher(
+    //   userAPI.endpoints.checkUserAuth.matchFulfilled,
+    //   (state, { payload }) => {
+    //     state.user = payload;
+    //     state.isAdmin = payload.role == "admin";
+    //     state.isStudent = payload.role == "student";
+    //     state.isInstructor = payload.role == "instructor";
+    //     localStorage.setItem("user", JSON.stringify(payload));
+    //   }
+    // )
+    // .addMatcher(userAPI.endpoints.checkUserAuth.matchRejected, (state) => {
+    //   state.user = null;
+    //   state.tokens = null;
+    //   localStorage.removeItem("tokens");
+    //   localStorage.removeItem("user");
+    //   // localStorage.removeItem("userName");
+    // });
   },
 });
 

@@ -1,15 +1,18 @@
-import { baseApi } from './baseApi';
+import { baseQueryWithAuth } from "./api";
+import { createApi } from "@reduxjs/toolkit/query/react";
 
-export const offerApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
+export const offerApi = createApi({
+  reducerPath: "offerApi",
+  baseQuery: baseQueryWithAuth,
+  endpoints: (builder: any) => ({
     getAllOffers: builder.query({
-      query: () => '/offers',
-      providesTags: ['Offer'],
+      query: () => "/offers",
+      providesTags: ["Offer"],
     }),
 
     getOfferById: builder.query({
-      query: (id) => `/offers/${id}`,
-      providesTags: ['Offer'],
+      query: (id: any) => `/offers/${id}`,
+      providesTags: ["Offer"],
     }),
   }),
 });

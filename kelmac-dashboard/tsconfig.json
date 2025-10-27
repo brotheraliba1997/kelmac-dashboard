@@ -36,7 +36,9 @@
     "postcss.config.mjs",
     "postcss.config.mjs",
     "tailwind.config.tsx",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts",
+    ".next\\dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

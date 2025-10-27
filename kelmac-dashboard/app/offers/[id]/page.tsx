@@ -1,18 +1,18 @@
 'use client';
 import { useParams } from 'next/navigation';
-import { useGetOfferByIdQuery } from '@/store/api/offerApi';
+// import { useGetOfferByIdQuery } from '@/store/api/offerApi';
 import Link from 'next/link';
 
 export default function OfferDetailPage() {
   const { id } = useParams();
-  const { data: offer, isLoading, isError } = useGetOfferByIdQuery(id);
+  // const { data: offer, isLoading, isError } = useGetOfferByIdQuery(id);
 
-  if (isLoading) return <div className="text-center mt-5">Loading offer...</div>;
-  if (isError) return <div className="text-danger text-center mt-5">Failed to load offer</div>;
+  // if (isLoading) return <div className="text-center mt-5">Loading offer...</div>;
+  // if (isError) return <div className="text-danger text-center mt-5">Failed to load offer</div>;
 
   return (
     <div className="container mt-5">
-      <h2 className="fw-bold text-primary mb-3">
+      {/* <h2 className="fw-bold text-primary mb-3">
         {offer.offerType} Offer - {offer.discountPercent}% Off
       </h2>
 
@@ -43,8 +43,8 @@ export default function OfferDetailPage() {
           <Link href={`/courses/${offer.course._id}`} className="btn btn-success">
             Enroll with Offer
           </Link>
-        )}
-      </div>
+        )} */}
+      {/* </div> */}
     </div>
   );
 }

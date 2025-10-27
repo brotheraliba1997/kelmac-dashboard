@@ -1,18 +1,18 @@
 'use client';
-import { useGetAllCompaniesQuery } from '@/store/api/companyApi';
-import CompanyCard from '@/components/cards/CompanyCard';
+// import { useGetAllCompaniesQuery } from '@/store/api/companyApi';
+// import CompanyCard from '@/components/cards/CompanyCard';
 
 export default function CompaniesPage() {
-  const { data: companies, isLoading, isError } = useGetAllCompaniesQuery();
+  // const { data: companies, isLoading, isError } = useGetAllCompaniesQuery();
 
-  if (isLoading) return <div className="text-center mt-5">Loading companies...</div>;
-  if (isError) return <div className="text-danger text-center mt-5">Failed to load companies</div>;
+  // if (isLoading) return <div className="text-center mt-5">Loading companies...</div>;
+  // if (isError) return <div className="text-danger text-center mt-5">Failed to load companies</div>;
 
   return (
     <div className="container mt-5">
       <h2 className="fw-bold text-primary text-center mb-4">Corporate Dashboard</h2>
       <div className="row">
-        {companies?.length > 0 ? (
+        {/* {companies?.length > 0 ? (
           companies.map((comp: any) => (
             <CompanyCard
               key={comp._id}
@@ -25,7 +25,7 @@ export default function CompaniesPage() {
           ))
         ) : (
           <div className="text-center text-muted">No companies found</div>
-        )}
+        )} */}
       </div>
     </div>
   );

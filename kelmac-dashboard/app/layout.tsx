@@ -5,6 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import Header from "./components/layout/header";
 import Sidebar from "./components/layout/sidebar";
+import {ReduxProvider} from "./redux/provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,12 +29,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+
+      <ReduxProvider>
+
+      
       <body className="nk-body bg-lighter npc-default has-sidebar no-touch nk-nio-theme">
         <div className="main-wrapper">
           
           {children}
         </div>
       </body>
+      </ReduxProvider>
     </html>
   );
 }

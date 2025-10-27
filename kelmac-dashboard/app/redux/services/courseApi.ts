@@ -1,32 +1,34 @@
-import { baseApi } from './baseApi';
-
-export const courseApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuth } from "./api";
+export const courseApi = createApi({
+  reducerPath: "courseApi",
+  baseQuery: baseQueryWithAuth,
+  endpoints: (builder: any) => ({
     getAllCourses: builder.query({
-      query: () => '/courses',
-      providesTags: ['Course'],
+      query: () => "/courses",
+      providesTags: ["Course"],
     }),
 
     getCourseById: builder.query({
-      query: (id) => `/courses/${id}`,
-      providesTags: ['Course'],
+      query: (id: any) => `/courses/${id}`,
+      providesTags: ["Course"],
     }),
 
     createCourse: builder.mutation({
-      query: (data) => ({
-        url: '/courses',
-        method: 'POST',
+      query: (data: any) => ({
+        url: "/courses",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['Course'],
+      invalidatesTags: ["Course"],
     }),
 
     deleteCourse: builder.mutation({
-      query: (id) => ({
+      query: (id: any) => ({
         url: `/courses/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Course'],
+      invalidatesTags: ["Course"],
     }),
   }),
 });

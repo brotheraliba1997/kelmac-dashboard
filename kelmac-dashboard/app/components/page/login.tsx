@@ -1,131 +1,142 @@
-import React from 'react'
+"use client";
+import React, { useState, useEffect } from "react";
+import { useLoginUserMutation } from "@/app/redux/services/authApi";
+import { useSelector } from "react-redux";
 
-function LoginComponent() {
+import { useRouter } from "next/navigation";
+import { FaUserCircle, FaLock, FaShieldAlt } from "react-icons/fa";
+
+
+const LoginPage: React.FC = () => {
+  const router = useRouter();
+  const [loginUser, { isLoading, error }] = useLoginUserMutation();
+  const { tokens, user } = useSelector((state: any) => state.auth);
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    agencyCode: "",
+  });
+
+  // Auto redirect if already logged in
+  useEffect(() => {
+    if (tokens && user) router.push("/dashboard");
+  }, [tokens, user, router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await loginUser({ email: form.email, password: form.password }).unwrap();
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.log("Login error:", err);
+    }
+  };
+
   return (
-      <div className="newloginbg">
-   <div className="login-section">
-  <div className="container">
-    <div
-      className="row  align-items-center justify-content-around"
-      style={{ height: "100vh" }}
-    >
-      <div className="col-lg-4 col-md-6 col-sm-12">
-        <div className="login-card">
-          <div className="loginlogo mb-3">
-            <a href="#">
-              <img src="assets/img/logo.png" alt="" />
-            </a>
-          </div>
-          <form action="" autoComplete="off" className="row p-4 pt-0">
-            <div className="col-md-12">
-              <label htmlFor="#" className="form-label">
-                Username/Email
-              </label>
-              <div className="input-group mb-3">
-                <div className="input-group-prepend">
-                  <span
-                    className="input-group-text rounded-1"
-                    id="basic-addon1"
-                  >
-                    <i className="fas fa-circle-user m-1" />
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  className="form-control rounded-1"
-                  placeholder=""
-                  aria-label="Username"
-                  aria-describedby="basic-addon1"
-                />
-              </div>
-            </div>
-            <div className="col-md-12">
-              <label htmlFor="#" className="form-label">
-                Password
-              </label>
-              <div className="form-group mb-3">
-                <div className="input-group" id="show_hide_password">
-                  <div className="input-group-prepend ">
-                    <span
-                      className="input-group-text rounded-1"
-                      id="basic-addon2"
-                    >
-                      <i className="fa fa-lock m-1" />
-                    </span>
-                  </div>
-                  <input
-                    className="form-control border-end-0"
-                    type="password"
-                  />
-                  <div className="input-group-text border-end border-start-0 ">
-                    <a href="">
-                      <i className="fa fa-eye-slash" aria-hidden="true" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-12">
-              <label htmlFor="#" className="form-label">
-                Agency Code
-              </label>
-              <div className="input-group mb-2">
-                <div className="input-group-prepend">
-                  <span
-                    className="input-group-text rounded-1"
-                    id="basic-addon1"
-                  >
-                    <i className="fa fa-shield-halved m-1" />
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  className="form-control rounded-1"
-                  placeholder=""
-                />
-              </div>
-            </div>
-            <div className="col-md-12 mb-3">
-              <div className="text-end">
-                <a href="#" className="fs-6">
-                  Forget Password
-                </a>
-              </div>
-            </div>
-            <div className="col-md-12">
-              <div className="d-grid mb-3">
-                <a
-                  href="index.html"
-                  type="button"
-                  id="sendlogin"
-                  className="btn btn-dark rounded-1"
-                >
-                  Login
-                </a>
-              </div>
-            </div>
-            <div className="col-md-12">
-              <div className="sinuptext text-center">
-                <p className="mb-1">
-                  Don’t have a Account? <a href="#">Sign Up</a>
-                </p>
-                <p className="fw-light">
-                  By logging in, you agree to our
-                  <br />{" "}
-                  <a href="#" className="text-dark">
-                    Terms and Conditions
+    <div className="newloginbg">
+      <div className="login-section">
+        <div className="container">
+          <div
+            className="row align-items-center justify-content-around"
+            style={{ height: "100vh" }}
+          >
+            <div className="col-lg-4 col-md-6 col-sm-12">
+              <div className="login-card">
+                <div className="loginlogo mb-3 text-center">
+                  <a href="#">
+                    <img src="assets/img/logo.png" alt="Logo" />
                   </a>
-                </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="row p-4 pt-0">
+                  {/* Email / Username */}
+                  <div className="col-md-12">
+                    <label className="form-label">Username/Email</label>
+                    <div className="input-group mb-3">
+                      <span className="input-group-text rounded-1">
+                        <FaUserCircle />
+                      </span>
+                      <input
+                        type="text"
+                        name="email"
+                        value={form.email}
+                        onChange={handleChange}
+                        className="form-control rounded-1"
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="col-md-12">
+                    <label className="form-label">Password</label>
+                    <div className="input-group mb-3">
+                      <span className="input-group-text rounded-1">
+                        <FaLock />
+                      </span>
+                      <input
+                        type="password"
+                        name="password"
+                        value={form.password}
+                        onChange={handleChange}
+                        className="form-control rounded-1"
+                        placeholder="Enter password"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Agency Code */}
+                  <div className="col-md-12">
+                    <label className="form-label">Agency Code</label>
+                    <div className="input-group mb-2">
+                      <span className="input-group-text rounded-1">
+                        <FaShieldAlt />
+                      </span>
+                      <input
+                        type="text"
+                        name="agencyCode"
+                        value={form.agencyCode}
+                        onChange={handleChange}
+                        className="form-control rounded-1"
+                        placeholder="Agency Code"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="col-md-12">
+                    <div className="d-grid mb-3">
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="btn btn-dark rounded-1"
+                      >
+                        {isLoading ? "Logging in..." : "Login"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="text-danger text-center">
+                      Invalid credentials
+                    </div>
+                  )}
+                </form>
               </div>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-</div>
-  )
-}
+  );
+};
 
-export default LoginComponent
+export default LoginPage;

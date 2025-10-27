@@ -1,121 +1,62 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { baseQueryWithAuth } from "./api";
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithAuth } from './api';
+
 
 export const userAPI = createApi({
-  reducerPath: "userAPI",
-  baseQuery: baseQueryWithAuth, // Set default base query to the one with auth headers
-  tagTypes: ["refetchClients", "refetchInterpreters"],
+  reducerPath: 'userAPI',
+  baseQuery: baseQueryWithAuth,
+  tagTypes: ['Users'],
   endpoints: (builder) => ({
-    // Client Queries
-    getClients: builder.query({
-      query: ({ page = 1, pageSize = 10, sort = "asc" }) => ({
-        url: "/users",
-        method: "GET",
-        params: { page, pageSize, sort, role: "client" },
+    // ✅ Create User
+    createUser: builder.mutation({
+      query: (body) => ({
+        url: '/users',
+        method: 'POST',
+        body,
       }),
-      providesTags: ["refetchClients"],
+      invalidatesTags: ['Users'],
     }),
 
-    createClient: builder.mutation({
-      query: (payload) => ({
-        url: "/users",
-        method: "POST",
-        body: { ...payload, role: "client" },
+    // ✅ Get All Users
+    getUsers: builder.query({
+      query: (params) => ({
+        url: '/users',
+        method: 'GET',
+        params,
       }),
-      invalidatesTags: ["refetchClients"],
+      providesTags: ['Users'],
     }),
 
-    updateClient: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/users/${id}`,
-        method: "PATCH",
-        body: { ...payload, role: "client" },
-      }),
-      invalidatesTags: ["refetchClients"],
+    // ✅ Get One User by ID
+    getUserById: builder.query({
+      query: (id) => `/users/${id}`,
     }),
 
-    // Interpreter Queries
-    getInterpreters: builder.query({
-      query: ({
-        page = 1,
-        pageSize = 10,
-        sort = "asc",
-        status = "Verified",
-      }) => ({
-        url: "/users",
-        method: "GET",
-        params: { page, pageSize, sort, role: "interpreter", status },
-      }),
-      providesTags: ["refetchInterpreters"],
-    }),
-
-    createInterpreter: builder.mutation({
-      query: (payload) => ({
-        url: "/users",
-        method: "POST",
-        body: { ...payload, role: "interpreter" },
-      }),
-      invalidatesTags: ["refetchInterpreters"],
-    }),
-
-    updateInterpreter: builder.mutation({
-      query: ({ id, payload }) => ({
-        url: `/users/${id}`,
-        method: "PATCH",
-        body: { ...payload, role: "interpreter" },
-      }),
-      invalidatesTags: ["refetchInterpreters"],
-    }),
-
-    paymentClient: builder.query({
-      query: () => ({
-        url: `/users/getAllClients`,
-        method: "GET",
-      }),
-    }),
-
+    // ✅ Update User
     updateProfile: builder.mutation({
-      query: ({ payload }) => ({
-        url: `/users/updateProfile`,
-        method: "PATCH",
-        body: payload,
+      query: ({ id, ...body }) => ({
+        url: `/users/${id}`,
+        method: 'PATCH',
+        body,
       }),
+      invalidatesTags: ['Users'],
     }),
 
-    changePassword: builder.mutation({
-      query: ({ payload }) => ({
-        url: `/users/changePassword`,
-        method: "PATCH",
-        body: payload,
-      }),
-    }),
-
-    getUserById: builder.mutation({
+    // ✅ Delete User
+    deleteUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}`,
-        method: "GET",
+        method: 'DELETE',
       }),
-    }),
-
-    checkUserAuth: builder.mutation({
-      query: () => ({
-        url: `/users/checkAuth`,
-        method: "GET",
-      }),
+      invalidatesTags: ['Users'],
     }),
   }),
 });
 
 export const {
-  useGetClientsQuery,
-  useCreateClientMutation,
-  useUpdateClientMutation,
-  useGetInterpretersQuery,
-  useCreateInterpreterMutation,
-  useUpdateInterpreterMutation,
-  usePaymentClientQuery,
+  useCreateUserMutation,
+  useGetUsersQuery,
+  useGetUserByIdQuery,
   useUpdateProfileMutation,
-  useChangePasswordMutation,
-  useGetUserByIdMutation,
-  useCheckUserAuthMutation,
+  useDeleteUserMutation,
 } = userAPI;

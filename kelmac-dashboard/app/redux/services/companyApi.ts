@@ -1,33 +1,36 @@
-import { baseApi } from './baseApi';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuth } from "./api";
 
-export const companyApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
+export const companyApi = createApi({
+  reducerPath: "companyApi",
+  baseQuery: baseQueryWithAuth,
+  endpoints: (builder: any) => ({
     getAllCompanies: builder.query({
-      query: () => '/companies',
-      providesTags: ['Company'],
+      query: () => "/companies",
+      providesTags: ["Company"],
     }),
 
     getCompanyById: builder.query({
-      query: (id) => `/companies/${id}`,
-      providesTags: ['Company'],
+      query: (id: any) => `/companies/${id}`,
+      providesTags: ["Company"],
     }),
 
     createCompany: builder.mutation({
-      query: (data) => ({
-        url: '/companies',
-        method: 'POST',
+      query: (data: any) => ({
+        url: "/companies",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['Company'],
+      invalidatesTags: ["Company"],
     }),
 
     updateCompany: builder.mutation({
-      query: ({ id, ...data }) => ({
+      query: ({ id, ...data }: any) => ({
         url: `/companies/${id}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
-      invalidatesTags: ['Company'],
+      invalidatesTags: ["Company"],
     }),
   }),
 });

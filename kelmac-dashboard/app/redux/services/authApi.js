@@ -8,12 +8,11 @@ export const authAPI = createApi({
   endpoints: (builder) => ({
     loginUser: builder.mutation({
       query: (credentials) => ({
-        url: "/login",
+        url: "/email/login",
         method: "POST",
         body: credentials,
       }),
     }),
-
 
     forgotPassword: builder.mutation({
       query: (credentials) => ({
@@ -23,12 +22,10 @@ export const authAPI = createApi({
       }),
     }),
 
-
     verifyToken: builder.mutation({
       query: (credentials) => ({
         url: `/verify-token?token=${credentials}`,
         method: "GET",
-     
       }),
     }),
 
@@ -37,7 +34,6 @@ export const authAPI = createApi({
         url: `/update-password`,
         method: "PATCH",
         body: payload,
-     
       }),
     }),
 
@@ -51,4 +47,10 @@ export const authAPI = createApi({
   }),
 });
 
-export const { useLoginUserMutation, useRegisterInterpreterMutation, useForgotPasswordMutation, useVerifyTokenMutation, useUpdatePasswordMutation } = authAPI;
+export const {
+  useLoginUserMutation,
+  useRegisterInterpreterMutation,
+  useForgotPasswordMutation,
+  useVerifyTokenMutation,
+  useUpdatePasswordMutation,
+} = authAPI;

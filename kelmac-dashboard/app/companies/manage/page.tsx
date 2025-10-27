@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useCreateCompanyMutation } from '@/store/api/companyApi';
+// import { useCreateCompanyMutation } from '@/store/api/companyApi';
 import { useRouter } from 'next/navigation';
 
 export default function ManageCompanyPage() {
@@ -12,7 +12,7 @@ export default function ManageCompanyPage() {
   });
 
   const router = useRouter();
-  const [createCompany, { isLoading }] = useCreateCompanyMutation();
+  // const [createCompany, { isLoading }] = useCreateCompanyMutation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,17 +20,17 @@ export default function ManageCompanyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await createCompany({
-        ...formData,
-        regionalDiscount: Number(formData.regionalDiscount),
-      }).unwrap();
-      alert('✅ Company created successfully');
-      router.push('/companies');
-    } catch (err) {
-      console.error(err);
-      alert('❌ Failed to create company');
-    }
+    // try {
+    //   await createCompany({
+    //     ...formData,
+    //     regionalDiscount: Number(formData.regionalDiscount),
+    //   }).unwrap();
+    //   alert('✅ Company created successfully');
+    //   router.push('/companies');
+    // } catch (err) {
+    //   console.error(err);
+    //   alert('❌ Failed to create company');
+    // }
   };
 
   return (
@@ -84,9 +84,9 @@ export default function ManageCompanyPage() {
           />
         </div>
 
-        <button type="submit" className="btn btn-primary" disabled={isLoading}>
+        {/* <button type="submit" className="btn btn-primary" disabled={isLoading}>
           {isLoading ? 'Saving...' : 'Create Company'}
-        </button>
+        </button> */}
       </form>
     </div>
   );

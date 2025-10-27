@@ -1,24 +1,27 @@
-import { baseApi } from './baseApi';
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuth } from "./api";
 
-export const blogApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
+export const blogApi = createApi({
+  reducerPath: "blogApi",
+  baseQuery: baseQueryWithAuth,
+  endpoints: (builder: any) => ({
     getAllBlogs: builder.query({
-      query: () => '/blogs',
-      providesTags: ['Blog'],
+      query: () => "/blogs",
+      providesTags: ["Blog"],
     }),
 
     getBlogById: builder.query({
-      query: (id) => `/blogs/${id}`,
-      providesTags: ['Blog'],
+      query: (id: any) => `/blogs/${id}`,
+      providesTags: ["Blog"],
     }),
 
     createBlog: builder.mutation({
-      query: (data) => ({
-        url: '/blogs',
-        method: 'POST',
+      query: (data: any) => ({
+        url: "/blogs",
+        method: "POST",
         body: data,
       }),
-      invalidatesTags: ['Blog'],
+      invalidatesTags: ["Blog"],
     }),
   }),
 });
