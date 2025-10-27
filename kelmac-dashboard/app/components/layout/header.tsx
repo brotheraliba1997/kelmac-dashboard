@@ -1,23 +1,34 @@
+import Image from "next/image";
 import React from "react";
+import logo from "@/app/assets/img/logo.png";
 
 function Header() {
   return (
     <div className="header header-one">
       <div className="header-left header-left-one">
         <a href="index.html" className="logo">
-          <img src="assets/img/logo.png" alt="Logo" />
+          <Image
+            src={logo}
+            alt="Logo"
+            width={600}
+            height={600}
+            objectFit="contain"
+            className=""
+          />
         </a>
         <a href="index.html" className="white-logo">
           <img src="assets/img/logo-white.png" alt="Logo" />
         </a>
-        <a href="index.html" className="logo logo-small">
-          <img
-            src="assets/img/logo-small.png"
+        {/* <a href="index.html" className="logo logo-small">
+          <Image
+            src={logo}
             alt="Logo"
-            width={30}
-            height={30}
+            width={300}
+            height={300}
+            objectFit="contain"
+            className=""
           />
-        </a>
+        </a> */}
       </div>
       <a href="javascript:void(0);" id="toggle_btn">
         <i className="fas fa-bars" />

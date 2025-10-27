@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { useLoginUserMutation } from "@/app/redux/services/authApi";
 import { useSelector } from "react-redux";
+import logo from "@/app/assets/img/logo.png";
 
 import { useRouter } from "next/navigation";
 import { FaUserCircle, FaLock, FaShieldAlt } from "react-icons/fa";
-
+import Image from "next/image";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -49,7 +50,14 @@ const LoginPage: React.FC = () => {
               <div className="login-card">
                 <div className="loginlogo mb-3 text-center">
                   <a href="#">
-                    <img src="assets/img/logo.png" alt="Logo" />
+                    <Image
+                      src={logo}
+                      alt="Logo"
+                      width={300}
+                      height={300}
+                      objectFit="contain"
+                      className=""
+                    />
                   </a>
                 </div>
 
@@ -88,24 +96,6 @@ const LoginPage: React.FC = () => {
                         className="form-control rounded-1"
                         placeholder="Enter password"
                         required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Agency Code */}
-                  <div className="col-md-12">
-                    <label className="form-label">Agency Code</label>
-                    <div className="input-group mb-2">
-                      <span className="input-group-text rounded-1">
-                        <FaShieldAlt />
-                      </span>
-                      <input
-                        type="text"
-                        name="agencyCode"
-                        value={form.agencyCode}
-                        onChange={handleChange}
-                        className="form-control rounded-1"
-                        placeholder="Agency Code"
                       />
                     </div>
                   </div>
