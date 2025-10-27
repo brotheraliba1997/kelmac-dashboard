@@ -44,7 +44,7 @@ const LoginPage: React.FC = () => {
         <div className="container">
           <div
             className="row align-items-center justify-content-around"
-            style={{ height: "99vh" }}
+            style={{ height: "100vh" }}
           >
             <div className="col-lg-4 col-md-6 col-sm-12">
               <div className="login-card">
