@@ -1,6 +1,6 @@
 import React from 'react'
 
-function ClientComponents() {
+function AddClientcomponent () {
   return (
    <div className="page-wrapper">
   <div className="content container-fluid">
@@ -96,4 +96,4 @@ function ClientComponents() {
   )
 }
 
-export default ClientComponents
+export default AddClientcomponent

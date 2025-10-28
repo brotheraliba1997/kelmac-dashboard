@@ -1,15 +1,18 @@
 "use client";
 
+import { useCreateUserMutation } from "@/app/redux/services/userApi";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function CreateUserPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    role: "",
-    status: "",
+    role: { id: 0 }, // 👈 object form mein
+    status: { id: 0 }, // 👈 object form mein
     provider: "email",
     socialId: "",
   });
@@ -17,54 +20,45 @@ export default function CreateUserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Handle change
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "role" || name === "status"
+          ? { id: Number(value) } // 👈 string form mein id
+          : value, // 👈 normal string for others
+    }));
   };
 
-  // Handle submit
+  const [createUser, { isLoading: loading }] = useCreateUserMutation();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMessage("");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`, // optional if auth required
-        },
-        body: JSON.stringify({
-          ...formData,
-          role: { id: formData.role },
-          status: { id: formData.status },
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData?.message || "Failed to create user");
-      }
-
+      await createUser(formData).unwrap();
+      router.push("/dashboard/users");
       setMessage("✅ User created successfully!");
+      console.log("User created:", formData);
+
       setFormData({
         firstName: "",
         lastName: "",
         email: "",
         password: "",
-        role: "",
-        status: "",
+        role: { id: 0 },
+        status: { id: 0 },
         provider: "email",
         socialId: "",
       });
     } catch (error: any) {
-      setMessage(`❌ ${error.message}`);
-    } finally {
-      setIsLoading(false);
+      setMessage(`❌ ${error?.data?.message || "Failed to create user"}`);
     }
   };
 
@@ -147,15 +141,15 @@ export default function CreateUserPage() {
                   <select
                     className="form-select"
                     name="role"
-                    value={formData.role}
+                    value={formData.role?.id || ""}
                     onChange={handleChange}
                     required
                   >
                     <option value="">Select Role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Instructor">Instructor</option>
-                    <option value="Corporate">Corporate</option>
-                    <option value="Student">Student</option>
+                    <option value="1">Admin</option>
+                    <option value="3">Instructor</option>
+                    <option value="4">Corporate</option>
+                    <option value="2">Student</option>
                   </select>
                 </div>
 
@@ -165,14 +159,14 @@ export default function CreateUserPage() {
                   <select
                     className="form-select"
                     name="status"
-                    value={formData.status}
+                    value={formData.status?.id || ""}
                     onChange={handleChange}
                     required
                   >
                     <option value="">Select Status</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Blocked">Blocked</option>
+                    <option value="1">Active</option>
+                    <option value="2">Pending</option>
+                    <option value="3">Blocked</option>
                   </select>
                 </div>
 

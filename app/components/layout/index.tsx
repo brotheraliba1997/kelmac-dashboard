@@ -2,7 +2,7 @@ import React from "react";
 import Header from "./header";
 import Sidebar from "./sidebar";
 
-function MainSection({children}: {children?: React.ReactNode}) {
+function MainSectionPage ({children}: {children?: React.ReactNode}) {
   return (
     <>
       <Header />
@@ -13,4 +13,4 @@ function MainSection({children}: {children?: React.ReactNode}) {
   );
 }
 
-export default MainSection;
+export default MainSectionPage;

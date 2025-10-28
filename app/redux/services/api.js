@@ -11,7 +11,9 @@ export const baseQueryWithoutAuth = fetchBaseQuery({
 export const baseQueryWithAuth = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL}`,
   prepareHeaders: (headers, { getState }) => {
-    const token = getState().auth.tokens?.access?.token;
+    console.log(getState() , "getState")
+    const token = getState().auth.token;
+    console.log("token from state==>", token);
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }

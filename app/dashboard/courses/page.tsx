@@ -9,7 +9,7 @@ import {
   GetUserStatusName,
 } from "@/app/utils/getUserRoleName";
 
-export default function page() {
+export default function CoursesPage() {
   const { data, error } = useGetUsersQuery({});
 
   console.log("data from users page==>", data?.data);
@@ -197,7 +197,7 @@ export default function page() {
               <div className="card-header py-3 bg-gradient">
                 <div className="row">
                   <div className="col">
-                    <h4 className="card-title">Clients List</h4>
+                    <h4 className="card-title">Courses List</h4>
                   </div>
                   <div className="col-auto">
                     <Link
@@ -219,14 +219,14 @@ export default function page() {
                         <line x1={12} y1={5} x2={12} y2={19} />
                         <line x1={5} y1={12} x2={19} y2={12} />
                       </svg>
-                      Add Client
+                      Add Courses
                     </Link>
                   </div>
                 </div>
               </div>
 
               <Table
-                title="Users List "
+                title="Courses List "
                 columns={columns}
                 dataSource={data?.data ?? []}
                 isLoading={isLoading}

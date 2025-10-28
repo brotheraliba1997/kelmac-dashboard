@@ -1,6 +1,6 @@
 import React from 'react'
 
-function MainDashboard() {
+function MainDashboardcomponent() {
   return (
       <div className="page-wrapper">
         <div className="content container-fluid">
@@ -287,4 +287,4 @@ function MainDashboard() {
   )
 }
 
-export default MainDashboard
+export default MainDashboardcomponent
