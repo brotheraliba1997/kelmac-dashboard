@@ -3,117 +3,27 @@ import MainDashboard from "@/app/components/dashboard--component/MainDashboard-c
 import React, { use, useEffect, useState } from "react";
 import Table from "@/app/components/table/index";
 import Link from "next/link";
-import { useGetUsersQuery } from "@/app/redux/services/userApi";
 import {
   GetUserRoleName,
   GetUserStatusName,
 } from "@/app/utils/getUserRoleName";
+import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
+import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 export default function CoursesPage() {
-  const { data, error } = useGetUsersQuery({});
-
-  console.log("data from users page==>", data?.data);
-  const allUsers = [
-    {
-      id: 1,
-      firstName: "Hamza",
-      lastName: "Ali",
-      email: "hamza@example.com",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 2,
-      firstName: "Usman",
-      lastName: "Khan",
-      email: "usman@example.com",
-      role: "Student",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      firstName: "Ali",
-      lastName: "Raza",
-      email: "ali.raza@example.com",
-      role: "Instructor",
-      status: "Active",
-    },
-    {
-      id: 4,
-      firstName: "Ahsan",
-      lastName: "Qureshi",
-      email: "ahsan.q@example.com",
-      role: "Corporate",
-      status: "Blocked",
-    },
-    {
-      id: 5,
-      firstName: "Taha",
-      lastName: "Malik",
-      email: "taha.malik@example.com",
-      role: "Student",
-      status: "Active",
-    },
-    {
-      id: 6,
-      firstName: "Bilal",
-      lastName: "Shahid",
-      email: "bilal.shahid@example.com",
-      role: "Instructor",
-      status: "Active",
-    },
-    {
-      id: 7,
-      firstName: "Zain",
-      lastName: "Ahmad",
-      email: "zain.ahmad@example.com",
-      role: "Corporate",
-      status: "Pending",
-    },
-    {
-      id: 8,
-      firstName: "Imran",
-      lastName: "Khalid",
-      email: "imran.k@example.com",
-      role: "Admin",
-      status: "Active",
-    },
-    {
-      id: 9,
-      firstName: "Saad",
-      lastName: "Hassan",
-      email: "saad.h@example.com",
-      role: "Student",
-      status: "Pending",
-    },
-    {
-      id: 10,
-      firstName: "Hassan",
-      lastName: "Butt",
-      email: "hassan.b@example.com",
-      role: "Instructor",
-      status: "Active",
-    },
-    {
-      id: 11,
-      firstName: "Nabeel",
-      lastName: "Iqbal",
-      email: "nabeel.i@example.com",
-      role: "Corporate",
-      status: "Blocked",
-    },
-  ];
+  const { data, error } = useGetAllCoursesQuery({});
+  console.log("data from courses page==>", data?.data);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
 
-  const totalEntries = allUsers.length;
+  const totalEntries = data?.data.length;
   const totalPages = Math.ceil(totalEntries / pageSize);
 
   const indexOfLastItem = page * pageSize;
   const indexOfFirstItem = indexOfLastItem - pageSize;
-  const currentData = allUsers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentData = data?.data.slice(indexOfFirstItem, indexOfLastItem);
 
   useEffect(() => {
     setIsLoading(true);
@@ -125,66 +35,93 @@ export default function CoursesPage() {
 
   const columns = [
     {
-      displayName: "Client",
+      displayName: "Title",
       displayField: (e: any) => (
-        <div className="d-flex align-items-center gap-2">
-          <div className="fw-semibold text-capitalize">
-            {e?.firstName} {e?.lastName}
-          </div>
+        <div className="fw-semibold text-capitalize">{e?.title}</div>
+      ),
+      searchable: true,
+    },
+
+    {
+      displayName: "Description",
+      displayField: (e: any) => (
+        <div className="text-muted text-truncate" style={{ maxWidth: "250px" }}>
+          {e?.description || "—"}
         </div>
       ),
       searchable: true,
     },
 
     {
-      displayName: "Email",
+      displayName: "Instructor",
       displayField: (e: any) => (
-        <div className="text-lowercase">{e?.email}</div>
+        <div className="fw-medium text-primary">
+          {e?.instructor?.firstName
+            ? `${e.instructor.firstName} ${e.instructor.lastName}`
+            : e?.instructor || "—"}
+        </div>
       ),
       searchable: true,
     },
 
     {
-      displayName: "Role",
+      displayName: "Price",
       displayField: (e: any) => (
-        <span className="badge bg-primary text-capitalize">
-          {GetUserRoleName(e?.role?.id)}
+        <span className="badge bg-info">
+          ${Number(e?.price || 0).toFixed(2)}
         </span>
       ),
       searchable: true,
     },
 
     {
-      displayName: "Status",
-      displayField: (e: any) => {
-        const statusName = GetUserStatusName(e?.status?.id);
+      displayName: "Modules",
+      displayField: (e: any) => (
+        <span className="badge bg-secondary">
+          {e?.modules?.length || 0} Modules
+        </span>
+      ),
+      searchable: false,
+    },
 
-        return (
-          <>
-            {statusName === "Active" && (
-              <span className="badge bg-success text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "Blocked" && (
-              <span className="badge bg-danger text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "Pending" && (
-              <span className="badge bg-warning text-dark text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "unknown" && (
-              <span className="badge bg-secondary text-capitalize">
-                Unknown
-              </span>
-            )}
-          </>
-        );
-      },
-      searchable: true,
+    // {
+    //   displayName: "Status",
+    //   displayField: (e: any) =>
+    //     e?.isPublished ? (
+    //       <span className="badge bg-success">Published</span>
+    //     ) : (
+    //       <span className="badge bg-warning text-dark">Draft</span>
+    //     ),
+    //   searchable: true,
+    // },
+
+    {
+      displayName: "Actions",
+      displayField: (e: any) => (
+        <div className="d-flex gap-3">
+          <FaEye
+            className="text-primary"
+            style={{ cursor: "pointer" }}
+            // onClick={() => handleView(e)}
+            title="View"
+          />
+
+          <Link href={`/dashboard/courses/${e?.id}`}>
+            <FaEdit
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              // onClick={() => handleEdit(e)}
+              title="Edit"
+            />
+          </Link>
+          <FaTrash
+            className="text-danger"
+            style={{ cursor: "pointer" }}
+            // onClick={() => handleDelete(e)}
+            title="Delete"
+          />
+        </div>
+      ),
     },
   ];
 
@@ -201,7 +138,7 @@ export default function CoursesPage() {
                   </div>
                   <div className="col-auto">
                     <Link
-                      href="/dashboard/users/create"
+                      href="/dashboard/courses/create"
                       className=" btn btn-dark btn-sm"
                     >
                       <svg

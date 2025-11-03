@@ -11,15 +11,28 @@ export const courseApi = createApi({
 
     getCourseById: builder.query({
       query: (id: any) => `/courses/${id}`,
+
       providesTags: ["Course"],
     }),
 
     createCourse: builder.mutation({
-      query: (data: any) => ({
+      query: ({ id, data }: { id: any; data: any }) => ({
         url: "/courses",
         method: "POST",
         body: data,
       }),
+      invalidatesTags: ["Course"],
+    }),
+
+    updateCourse: builder.mutation({
+      query: ({ id, data }: { id: any; data: any }) => {
+        console.log("Updating course with ID and data =>", id, data);
+        return {
+          url: `/courses/${id}`,
+          method: "PATCH",
+          body: data,
+        };
+      },
       invalidatesTags: ["Course"],
     }),
 
@@ -38,4 +51,5 @@ export const {
   useGetCourseByIdQuery,
   useCreateCourseMutation,
   useDeleteCourseMutation,
+  useUpdateCourseMutation,
 } = courseApi;

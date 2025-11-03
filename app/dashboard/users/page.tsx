@@ -12,7 +12,7 @@ import {
 export default function page() {
   const { data, error } = useGetUsersQuery({});
 
-  console.log("data from users page==>", data?.data);
+  console.log("data from users page==>", data);
   const allUsers = [
     {
       id: 1,

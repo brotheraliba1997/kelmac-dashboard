@@ -1,34 +1,19 @@
-'use client';
-import { useParams } from 'next/navigation';
-// import { useGetCourseByIdQuery } from '@/store/api/courseApi';
-// import { useEnrollInCourseMutation } from '@/store/api/enrollmentApi';
+"use client";
+import {
+  useGetCourseByIdQuery,
+  useUpdateCourseMutation,
+} from "@/app/redux/services/courseApi";
+import { useParams } from "next/navigation";
+import CreateCourse from "../create/page";
+import Coursescomponents from "@/app/components/courses-components/create-components";
+import { useGetUsersQuery } from "@/app/redux/services/userApi";
 
 export default function CourseDetail() {
   const { id } = useParams();
-//   const { data: course, isLoading } = useGetCourseByIdQuery(id);
-//   const [enrollInCourse, { isLoading: enrolling }] = useEnrollInCourseMutation();
+  const { data: findOne } = useGetCourseByIdQuery(id);
+   const { data, error } = useGetUsersQuery({});
+  const [updateCourse, { isLoading, isSuccess }] =
+    useUpdateCourseMutation();
 
-  const handleEnroll = async () => {
-    try {
-    //   await enrollInCourse(id).unwrap();
-      alert('✅ Enrolled successfully!');
-    } catch (err) {
-      alert('❌ Enrollment failed');
-    }
-  };
-
-//   if (isLoading) return <div className="text-center mt-5">Loading...</div>;
-
-  return (
-    <div className="container mt-5">
-      {/* <h2 className="text-primary">{course.title}</h2>
-      <p className="text-muted">{course.description}</p>
-      <h6>Instructor: {course?.instructor?.name || 'N/A'}</h6>
-      <h5 className="mt-3">Price: ${course.price}</h5>
-
-      <button onClick={handleEnroll} className="btn btn-success mt-4" disabled={enrolling}>
-        {enrolling ? 'Enrolling...' : 'Enroll Now'}
-      </button> */}
-    </div>
-  );
+  return <Coursescomponents findOne={findOne} createCourse={updateCourse} id={id} isLoading={isLoading} data={data} />;
 }

@@ -17,10 +17,12 @@ function Sidebar() {
   const [openSubMenu, setOpenSubMenu] = useState<any>(null);
 
   const logoutHandler = async () => {
+    router.push("/login");
     dispatch(logout());
-    if (!token && !user) {
-      router.push("/login");
-    }
+    console.log("Logging out...");
+    // if (!token && !user) {
+    //   router.push("/login");
+    // }
   };
 
   const pathName = usePathname();
@@ -66,7 +68,7 @@ function Sidebar() {
               })}
 
             <li>
-              <Link href="" onClick={logoutHandler}>
+              <Link href="/login" onClick={logoutHandler}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
