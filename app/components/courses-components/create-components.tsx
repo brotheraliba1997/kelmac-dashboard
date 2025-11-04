@@ -36,8 +36,7 @@ function Coursescomponents({
   isLoading,
   data,
 }: any) {
-
-  console.log(createCourse,id, "createCourse" )
+  console.log(createCourse, id, "createCourse");
   const [formData, setFormData] = useState<CourseForm>({
     title: "",
     description: "",
@@ -86,7 +85,8 @@ function Coursescomponents({
 
   const handleModuleChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {
     const modules = [...formData.modules];
-    modules[i][e.target.name] = e.target.value;
+    const propertyName = e.target.name as keyof Module;
+    (modules[i] as any)[propertyName] = e.target.value;
     setFormData({ ...formData, modules });
   };
 
@@ -115,7 +115,7 @@ function Coursescomponents({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const payload = { ...formData, price: parseFloat(formData.price) };
-    await createCourse({id: id || "" , data: payload}).unwrap();
+    await createCourse({ id: id || "", data: payload }).unwrap();
     router.push("/dashboard/courses");
   };
 

@@ -12,18 +12,20 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 export default function CoursesPage() {
   const { data, error } = useGetAllCoursesQuery({});
-  console.log("data from courses page==>", data?.data);
+  console.log("data from courses page==>", data);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [isLoading, setIsLoading] = useState(true);
 
-  const totalEntries = data?.data.length;
+  // Handle different API response structures
+  const courses = (data as any)?.data || data || [];
+  const totalEntries = courses.length;
   const totalPages = Math.ceil(totalEntries / pageSize);
 
   const indexOfLastItem = page * pageSize;
   const indexOfFirstItem = indexOfLastItem - pageSize;
-  const currentData = data?.data.slice(indexOfFirstItem, indexOfLastItem);
+  const currentData = courses.slice(indexOfFirstItem, indexOfLastItem);
 
   useEffect(() => {
     setIsLoading(true);
@@ -165,7 +167,7 @@ export default function CoursesPage() {
               <Table
                 title="Courses List "
                 columns={columns}
-                dataSource={data?.data ?? []}
+                dataSource={currentData}
                 isLoading={isLoading}
                 totalPages={totalPages}
                 totalEntries={totalEntries}
