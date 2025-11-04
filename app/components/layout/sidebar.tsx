@@ -16,6 +16,8 @@ function Sidebar() {
   const { token, user } = auth;
   const [openSubMenu, setOpenSubMenu] = useState<any>(null);
 
+  console.log("Sidebar user role:", user?.role);
+
   const logoutHandler = async () => {
     router.push("/login");
     dispatch(logout());
@@ -34,7 +36,7 @@ function Sidebar() {
           <ul>
             {array
               .filter((item: any) =>
-                item.role.includes(GetUserRoleName(user?.role?.id))
+                item.role.includes(GetUserRoleName(user?.role?._id))
               )
               .map((item, index) => {
                 // if (item.role.includes(user?.role)) {

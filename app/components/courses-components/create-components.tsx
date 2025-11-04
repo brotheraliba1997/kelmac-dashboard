@@ -185,7 +185,7 @@ function Coursescomponents({
               <option value="">Select Role</option>
               {data?.data.map((roleId: any) => (
                 <option key={roleId} value={roleId?.id}>
-                  {GetUserRoleName(roleId?.role?.id)}
+                  {GetUserRoleName(roleId?.role?._id)}
                 </option>
               ))}
             </select>

@@ -1,4 +1,5 @@
 export function GetUserRoleName(roleId?: number): string {
+  console.log("Getting user role name for roleId:", roleId);
   switch (roleId) {
     case 1:
       return "admin";

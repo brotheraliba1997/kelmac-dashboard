@@ -148,7 +148,7 @@ export default function page() {
       displayName: "Role",
       displayField: (e: any) => (
         <span className="badge bg-primary text-capitalize">
-          {GetUserRoleName(e?.role?.id)}
+          {GetUserRoleName(e?.role?._id)}
         </span>
       ),
       searchable: true,
