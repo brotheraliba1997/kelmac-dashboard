@@ -38,7 +38,6 @@ function Sidebar() {
               )
               .map((item, index) => {
                 // if (item.role.includes(user?.role)) {
-
                 return (
                   <li key={`route-${index}`} className="submenu">
                     <Link
