@@ -70,9 +70,37 @@
       ),
        role: ["student", "admin", "instructor"],
     },
+
+
+
+     {
+      name: "Class Schedule",
+      path: "/dashboard/class-schedule",
+      svg: (
+        <>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="feather feather-message-square"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </>
+      ),
+       role: ["student", "admin", "instructor"],
+    },
+
+
     {
       name: "Offers",
-      path: "/dashboard/offers",
+      path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +124,7 @@
     },
     {
       name: "Lessons",
-      path: "/dashboard/lessons",
+    path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -120,7 +148,7 @@
     },
     {
       name: "Certificates",
-      path: "/dashboard/certificates",
+      path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -170,7 +198,7 @@
     },
     {
       name: "Payment",
-      path: "/dashboard/payment",
+       path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -195,7 +223,7 @@
     },
     {
       name: "Corporate",
-      path: "/dashboard/corporate",
+       path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -232,7 +260,7 @@
     },
     {
       name: "Enrollments",
-      path: "/dashboard/enrollments",
+       path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -254,7 +282,7 @@
     },
     {
       name: "Modules",
-      path: "/dashboard/modules",
+      path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -277,7 +305,7 @@
    
     {
       name: "Settings",
-      path: "/dashboard/settings/",
+       path: "#",
       svg: (
         <svg
           xmlns="http://www.w3.org/2000/svg"

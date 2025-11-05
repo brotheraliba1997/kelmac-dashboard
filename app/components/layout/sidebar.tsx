@@ -36,7 +36,9 @@ function Sidebar() {
           <ul>
             {array
               .filter((item: any) =>
-                item.role.includes(GetUserRoleName(user?.role?._id))
+                item.role.includes(
+                  GetUserRoleName(user?.role?._id || user?.role?.id)
+                )
               )
               .map((item, index) => {
                 // if (item.role.includes(user?.role)) {
