@@ -45,6 +45,7 @@ function Sidebar() {
                 return (
                   <li key={`route-${index}`} className="submenu">
                     <Link
+                    style={{textDecoration: "none"}}
                       href={item?.path || "#"}
                       className={`${
                         openSubMenu === `item-${index}` ? "subdrop" : ""
@@ -57,15 +58,15 @@ function Sidebar() {
                     >
                       {item.svg}
                       <span> {item.name} </span>{" "}
-                      <span className="menu-arrow"></span>
+                      {/* <span className="menu-arrow"></span> */}
                     </Link>
 
-                    <ul
+                    {/* <ul
                       style={{
                         display:
                           openSubMenu === `item-${index}` ? "block" : "none",
                       }}
-                    ></ul>
+                    ></ul> */}
                   </li>
                 );
               })}
