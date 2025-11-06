@@ -1,5 +1,12 @@
 "use client";
-import React, { useMemo, useState } from "react";
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import DynamicForm, { DynamicFormConfig } from "../shared/DynamicForm";
@@ -30,12 +37,61 @@ import {
 } from "../../redux/services/courseApi";
 import { useGetCategoriesQuery } from "../../redux/services/categoryApi";
 
-// Helper function to validate MongoDB ObjectId
-const isValidObjectId = (id: string): boolean => {
-  return /^[0-9a-fA-F]{24}$/.test(id);
-};
+// ===== TYPES & INTERFACES =====
+export interface Course {
+  id?: string;
+  title: string;
+  slug?: string;
+  subtitle?: string;
+  description: string;
+  instructor: string;
+  overview?: string;
+  thumbnailUrl?: string;
+  previewVideoUrl?: string;
+  category: string;
+  subcategories: string[];
+  topics: string[];
+  skillLevel: SkillLevelEnum;
+  language: string;
+  captionsLanguage?: string;
+  certificate: boolean;
+  lifetimeAccess: boolean;
+  mobileAccess: boolean;
+  price: number;
+  discountedPrice?: number;
+  discountPercentage?: number;
+  currency: CurrencyEnum;
+  whatYouWillLearn: string[];
+  requirements: string[];
+  targetAudience: string[];
+  features: string[];
+  faqs: FAQ[];
+  sessions: Session[];
+  isPublished: boolean;
+  isFeatured: boolean;
+  isBestseller: boolean;
+  isNew: boolean;
+}
 
-// Enums matching the schema
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+export interface Session {
+  title: string;
+  description: string;
+  duration: number;
+  sessionType: SessionTypeEnum;
+  dayGroup?: string;
+  startTime?: string;
+  endTime?: string;
+  isFree: boolean;
+  materials: string[];
+  objectives: string[];
+  prerequisites: string[];
+}
+
 export enum SessionTypeEnum {
   LECTURE = "lecture",
   INTRODUCTION = "introduction",
@@ -62,6 +118,216 @@ interface DynamicCourseFormProps {
   mode?: "create" | "edit";
   courseId?: string;
 }
+
+// ===== STATE MANAGEMENT =====
+interface FormState {
+  currentStep: number;
+  accumulatedFormData: Record<string, any>;
+  sessions: Session[];
+  faqs: FAQ[];
+  showSessionForm: boolean;
+  showFaqForm: boolean;
+  editingSessionIndex: number | null;
+  editingFaqIndex: number | null;
+}
+
+type FormAction =
+  | { type: "SET_STEP"; payload: number }
+  | { type: "ACCUMULATE_DATA"; payload: Record<string, any> }
+  | { type: "SET_SESSIONS"; payload: Session[] }
+  | { type: "ADD_SESSION"; payload: Session }
+  | { type: "UPDATE_SESSION"; payload: { index: number; session: Session } }
+  | { type: "DELETE_SESSION"; payload: number }
+  | { type: "SET_FAQS"; payload: FAQ[] }
+  | { type: "ADD_FAQ"; payload: FAQ }
+  | { type: "UPDATE_FAQ"; payload: { index: number; faq: FAQ } }
+  | { type: "DELETE_FAQ"; payload: number }
+  | { type: "TOGGLE_SESSION_FORM"; payload?: boolean }
+  | { type: "TOGGLE_FAQ_FORM"; payload?: boolean }
+  | { type: "SET_EDITING_SESSION"; payload: number | null }
+  | { type: "SET_EDITING_FAQ"; payload: number | null }
+  | { type: "RESET_FORM" };
+
+const initialFormState: FormState = {
+  currentStep: 1,
+  accumulatedFormData: {},
+  sessions: [],
+  faqs: [],
+  showSessionForm: false,
+  showFaqForm: false,
+  editingSessionIndex: null,
+  editingFaqIndex: null,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_STEP":
+      return { ...state, currentStep: action.payload };
+
+    case "ACCUMULATE_DATA":
+      return {
+        ...state,
+        accumulatedFormData: {
+          ...state.accumulatedFormData,
+          ...action.payload,
+        },
+      };
+
+    case "SET_SESSIONS":
+      return { ...state, sessions: action.payload };
+
+    case "ADD_SESSION":
+      return {
+        ...state,
+        sessions: [
+          ...state.sessions,
+          { ...action.payload, order: state.sessions.length },
+        ],
+        showSessionForm: false,
+        editingSessionIndex: null,
+      };
+
+    case "UPDATE_SESSION":
+      const updatedSessions = [...state.sessions];
+      updatedSessions[action.payload.index] = {
+        ...action.payload.session,
+        order: action.payload.index,
+      };
+      return {
+        ...state,
+        sessions: updatedSessions,
+        showSessionForm: false,
+        editingSessionIndex: null,
+      };
+
+    case "DELETE_SESSION":
+      return {
+        ...state,
+        sessions: state.sessions.filter((_, i) => i !== action.payload),
+      };
+
+    case "SET_FAQS":
+      return { ...state, faqs: action.payload };
+
+    case "ADD_FAQ":
+      return {
+        ...state,
+        faqs: [...state.faqs, action.payload],
+        showFaqForm: false,
+        editingFaqIndex: null,
+      };
+
+    case "UPDATE_FAQ":
+      const updatedFaqs = [...state.faqs];
+      updatedFaqs[action.payload.index] = action.payload.faq;
+      return {
+        ...state,
+        faqs: updatedFaqs,
+        showFaqForm: false,
+        editingFaqIndex: null,
+      };
+
+    case "DELETE_FAQ":
+      return {
+        ...state,
+        faqs: state.faqs.filter((_, i) => i !== action.payload),
+      };
+
+    case "TOGGLE_SESSION_FORM":
+      return {
+        ...state,
+        showSessionForm: action.payload ?? !state.showSessionForm,
+        editingSessionIndex:
+          action.payload === false ? null : state.editingSessionIndex,
+      };
+
+    case "TOGGLE_FAQ_FORM":
+      return {
+        ...state,
+        showFaqForm: action.payload ?? !state.showFaqForm,
+        editingFaqIndex:
+          action.payload === false ? null : state.editingFaqIndex,
+      };
+
+    case "SET_EDITING_SESSION":
+      return {
+        ...state,
+        editingSessionIndex: action.payload,
+        showSessionForm: action.payload !== null,
+      };
+
+    case "SET_EDITING_FAQ":
+      return {
+        ...state,
+        editingFaqIndex: action.payload,
+        showFaqForm: action.payload !== null,
+      };
+
+    case "RESET_FORM":
+      return initialFormState;
+
+    default:
+      return state;
+  }
+}
+
+// ===== UTILITY FUNCTIONS =====
+const isValidObjectId = (id: string): boolean => {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+};
+
+const processArrayField = (data: string | string[]): string[] => {
+  if (Array.isArray(data)) return data;
+  if (typeof data === "string") {
+    return data
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  return [];
+};
+
+const validateFormData = (
+  data: Record<string, any>,
+  faqs: FAQ[],
+  sessions: Session[]
+): string[] => {
+  const errors: string[] = [];
+
+  if (!data.title?.trim()) errors.push("Course title is required");
+  if (!data.description?.trim()) errors.push("Course description is required");
+  if (!data.instructor?.trim() || !isValidObjectId(data.instructor)) {
+    errors.push("Valid instructor must be selected");
+  }
+  if (!data.category?.trim() || !isValidObjectId(data.category)) {
+    errors.push("Valid category must be selected");
+  }
+  if (!data.whatYouWillLearn?.trim()) {
+    errors.push("Learning objectives are required");
+  }
+
+  // FAQ validation
+  const validFaqs = faqs.filter(
+    (faq) => faq.question?.trim() && faq.answer?.trim()
+  );
+  if (faqs.length > 0 && validFaqs.length === 0) {
+    errors.push(
+      "If adding FAQs, at least one complete FAQ (question and answer) is required"
+    );
+  }
+
+  // Sessions validation
+  const validSessions = sessions.filter(
+    (session) => session.title?.trim() && session.description?.trim()
+  );
+  if (sessions.length > 0 && validSessions.length === 0) {
+    errors.push(
+      "If adding sessions, at least one complete session (title and description) is required"
+    );
+  }
+
+  return errors;
+};
 
 // FAQ Form Component
 const FaqForm: React.FC<{
@@ -487,6 +753,27 @@ export default function DynamicCourseForm({
     isLoading: categoriesLoading,
   } = useGetCategoriesQuery({ isActive: true });
 
+  // Helper function to format sessions for editing
+  const formatSessionsForEdit = (sessions: any[]) => {
+    return sessions
+      .map((session, index) => {
+        let sessionText = `SESSION ${index + 1}: ${session.title}`;
+        if (session.description)
+          sessionText += `\nDESCRIPTION: ${session.description}`;
+        if (session.sessionType)
+          sessionText += `\nTYPE: ${session.sessionType}`;
+        if (session.duration)
+          sessionText += `\nDURATION: ${session.duration} minutes`;
+        if (session.startTime) sessionText += `\nSTART: ${session.startTime}`;
+        if (session.endTime) sessionText += `\nEND: ${session.endTime}`;
+        if (session.videoUrl) sessionText += `\nVIDEO: ${session.videoUrl}`;
+        if (session.isFree) sessionText += `\nFREE: yes`;
+        if (session.dayGroup) sessionText += `\nDAY: ${session.dayGroup}`;
+        return sessionText;
+      })
+      .join("\n\n");
+  };
+
   // Process course data for edit mode
   const processedCourseData = useMemo(() => {
     if (!isEditMode || !courseData) return {};
@@ -634,27 +921,6 @@ export default function DynamicCourseForm({
     });
 
     return faqs;
-  };
-
-  // Helper function to format sessions for editing
-  const formatSessionsForEdit = (sessions: any[]) => {
-    return sessions
-      .map((session, index) => {
-        let sessionText = `SESSION ${index + 1}: ${session.title}`;
-        if (session.description)
-          sessionText += `\nDESCRIPTION: ${session.description}`;
-        if (session.sessionType)
-          sessionText += `\nTYPE: ${session.sessionType}`;
-        if (session.duration)
-          sessionText += `\nDURATION: ${session.duration} minutes`;
-        if (session.startTime) sessionText += `\nSTART: ${session.startTime}`;
-        if (session.endTime) sessionText += `\nEND: ${session.endTime}`;
-        if (session.videoUrl) sessionText += `\nVIDEO: ${session.videoUrl}`;
-        if (session.isFree) sessionText += `\nFREE: yes`;
-        if (session.dayGroup) sessionText += `\nDAY: ${session.dayGroup}`;
-        return sessionText;
-      })
-      .join("\n\n");
   };
 
   // Helper function to process sessions text into array format
@@ -1258,16 +1524,20 @@ export default function DynamicCourseForm({
         // Category & Classification - ensure category is string and not empty
         category: data.category, // MongoDB ObjectId string
         subcategories: data.subcategories
-          ? data.subcategories
-              .split(",")
-              .map((s: string) => s.trim())
-              .filter((s: string) => s.length > 0)
+          ? Array.isArray(data.subcategories)
+            ? data.subcategories
+            : data.subcategories
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter((s: string) => s.length > 0)
           : [],
         topics: data.topics
-          ? data.topics
-              .split(",")
-              .map((s: string) => s.trim())
-              .filter((s: string) => s.length > 0)
+          ? Array.isArray(data.topics)
+            ? data.topics
+            : data.topics
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter((s: string) => s.length > 0)
           : [],
 
         // Pricing
@@ -1394,7 +1664,8 @@ export default function DynamicCourseForm({
 
     console.log("Updated form data:", updatedFormData);
 
-    if (isEditMode || currentStep === totalSteps) {
+    // Only submit when we reach the final step (step 7)
+    if (currentStep === totalSteps) {
       return handleSubmit(updatedFormData);
     } else {
       setCurrentStep((prev) => prev + 1);
@@ -1402,7 +1673,7 @@ export default function DynamicCourseForm({
   };
 
   const handleCancel = () => {
-    if (!isEditMode && currentStep > 1) {
+    if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
     } else {
       router.back();
@@ -1502,34 +1773,34 @@ export default function DynamicCourseForm({
       <div className="content container-fluid">
         <div className="row justify-content-center">
           <div className="col-xl-10">
-            {/* Progress indicator for create mode */}
-            {!isEditMode && (
-              <div className="card mb-4">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h5 className="mb-0">Course Creation Progress</h5>
-                    <span className="badge bg-primary">
-                      Step {currentStep} of {totalSteps}
-                    </span>
-                  </div>
-                  <div className="progress" style={{ height: "8px" }}>
-                    <div
-                      className="progress-bar bg-primary"
-                      style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                    />
-                  </div>
-                  <div className="d-flex justify-content-between mt-2">
-                    <small className="text-muted">Basic Info</small>
-                    <small className="text-muted">Content</small>
-                    <small className="text-muted">Metadata</small>
-                    <small className="text-muted">Pricing</small>
-                    <small className="text-muted">FAQ</small>
-                    <small className="text-muted">Sessions</small>
-                    <small className="text-muted">Details</small>
-                  </div>
+            {/* Progress indicator for both create and edit modes */}
+            <div className="card mb-4">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="mb-0">
+                    Course {isEditMode ? "Update" : "Creation"} Progress
+                  </h5>
+                  <span className="badge bg-primary">
+                    Step {currentStep} of {totalSteps}
+                  </span>
+                </div>
+                <div className="progress" style={{ height: "8px" }}>
+                  <div
+                    className="progress-bar bg-primary"
+                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                  />
+                </div>
+                <div className="d-flex justify-content-between mt-2">
+                  <small className="text-muted">Basic Info</small>
+                  <small className="text-muted">Content</small>
+                  <small className="text-muted">Metadata</small>
+                  <small className="text-muted">Pricing</small>
+                  <small className="text-muted">FAQ</small>
+                  <small className="text-muted">Sessions</small>
+                  <small className="text-muted">Details</small>
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="card">
               <div className="card-body">

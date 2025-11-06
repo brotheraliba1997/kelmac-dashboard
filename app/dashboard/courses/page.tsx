@@ -77,10 +77,10 @@ export default function CoursesPage() {
     },
 
     {
-      displayName: "Modules",
+      displayName: "Sessions",
       displayField: (e: any) => (
         <span className="badge bg-secondary">
-          {e?.modules?.length || 0} Modules
+          {e?.sessions?.length || 0} Sessions
         </span>
       ),
       searchable: false,

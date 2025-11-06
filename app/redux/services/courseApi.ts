@@ -3,6 +3,7 @@ import { baseQueryWithAuth } from "./api";
 export const courseApi = createApi({
   reducerPath: "courseApi",
   baseQuery: baseQueryWithAuth,
+  tagTypes: ["Course"],
   endpoints: (builder: any) => ({
     getAllCourses: builder.query({
       query: () => "/courses",

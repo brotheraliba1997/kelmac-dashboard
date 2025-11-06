@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "react-toastify/dist/ReactToastify.css";
 import { ReduxProvider } from "./redux/provider";
+import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +32,18 @@ export default function RootLayout({
       <body className="nk-body bg-lighter npc-default has-sidebar no-touch nk-nio-theme">
         <ReduxProvider>
           <div className="main-wrapper">{children}</div>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
         </ReduxProvider>
       </body>
     </html>
