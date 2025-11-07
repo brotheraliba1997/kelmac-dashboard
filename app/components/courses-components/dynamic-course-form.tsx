@@ -67,6 +67,7 @@ export interface Course {
   features: string[];
   faqs: FAQ[];
   sessions: Session[];
+  timeTable?: ClassDateOption[];
   isPublished: boolean;
   isFeatured: boolean;
   isBestseller: boolean;
@@ -90,6 +91,12 @@ export interface Session {
   materials: string[];
   objectives: string[];
   prerequisites: string[];
+}
+
+export interface ClassDateOption {
+  date: Date;
+  description?: string; // e.g. "Full Week", "Weekend Per day"
+  time?: string; // e.g. "9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
 }
 
 export enum SessionTypeEnum {
@@ -125,10 +132,13 @@ interface FormState {
   accumulatedFormData: Record<string, any>;
   sessions: Session[];
   faqs: FAQ[];
+  timeTable: ClassDateOption[];
   showSessionForm: boolean;
   showFaqForm: boolean;
+  showTimeTableForm: boolean;
   editingSessionIndex: number | null;
   editingFaqIndex: number | null;
+  editingTimeTableIndex: number | null;
 }
 
 type FormAction =
@@ -142,10 +152,19 @@ type FormAction =
   | { type: "ADD_FAQ"; payload: FAQ }
   | { type: "UPDATE_FAQ"; payload: { index: number; faq: FAQ } }
   | { type: "DELETE_FAQ"; payload: number }
+  | { type: "SET_TIMETABLE"; payload: ClassDateOption[] }
+  | { type: "ADD_TIMETABLE"; payload: ClassDateOption }
+  | {
+      type: "UPDATE_TIMETABLE";
+      payload: { index: number; timeTable: ClassDateOption };
+    }
+  | { type: "DELETE_TIMETABLE"; payload: number }
   | { type: "TOGGLE_SESSION_FORM"; payload?: boolean }
   | { type: "TOGGLE_FAQ_FORM"; payload?: boolean }
+  | { type: "TOGGLE_TIMETABLE_FORM"; payload?: boolean }
   | { type: "SET_EDITING_SESSION"; payload: number | null }
   | { type: "SET_EDITING_FAQ"; payload: number | null }
+  | { type: "SET_EDITING_TIMETABLE"; payload: number | null }
   | { type: "RESET_FORM" };
 
 const initialFormState: FormState = {
@@ -153,10 +172,13 @@ const initialFormState: FormState = {
   accumulatedFormData: {},
   sessions: [],
   faqs: [],
+  timeTable: [],
   showSessionForm: false,
   showFaqForm: false,
+  showTimeTableForm: false,
   editingSessionIndex: null,
   editingFaqIndex: null,
+  editingTimeTableIndex: null,
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -181,7 +203,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
         ...state,
         sessions: [
           ...state.sessions,
-          { ...action.payload, order: state.sessions.length },
+          //   { ...action.payload, order: state.sessions.length },
         ],
         showSessionForm: false,
         editingSessionIndex: null,
@@ -191,7 +213,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
       const updatedSessions = [...state.sessions];
       updatedSessions[action.payload.index] = {
         ...action.payload.session,
-        order: action.payload.index,
+        // order: action.payload.index,
       };
       return {
         ...state,
@@ -261,6 +283,48 @@ function formReducer(state: FormState, action: FormAction): FormState {
         ...state,
         editingFaqIndex: action.payload,
         showFaqForm: action.payload !== null,
+      };
+
+    case "SET_TIMETABLE":
+      return { ...state, timeTable: action.payload };
+
+    case "ADD_TIMETABLE":
+      return {
+        ...state,
+        timeTable: [...state.timeTable, action.payload],
+        showTimeTableForm: false,
+        editingTimeTableIndex: null,
+      };
+
+    case "UPDATE_TIMETABLE":
+      const updatedTimeTable = [...state.timeTable];
+      updatedTimeTable[action.payload.index] = action.payload.timeTable;
+      return {
+        ...state,
+        timeTable: updatedTimeTable,
+        showTimeTableForm: false,
+        editingTimeTableIndex: null,
+      };
+
+    case "DELETE_TIMETABLE":
+      return {
+        ...state,
+        timeTable: state.timeTable.filter((_, i) => i !== action.payload),
+      };
+
+    case "TOGGLE_TIMETABLE_FORM":
+      return {
+        ...state,
+        showTimeTableForm: action.payload ?? !state.showTimeTableForm,
+        editingTimeTableIndex:
+          action.payload === false ? null : state.editingTimeTableIndex,
+      };
+
+    case "SET_EDITING_TIMETABLE":
+      return {
+        ...state,
+        editingTimeTableIndex: action.payload,
+        showTimeTableForm: action.payload !== null,
       };
 
     case "RESET_FORM":
@@ -704,6 +768,136 @@ const SessionForm: React.FC<{
   );
 };
 
+// TimeTable Form Component
+const TimeTableForm: React.FC<{
+  initialData?: ClassDateOption;
+  onSave: (data: ClassDateOption) => void;
+  onCancel: () => void;
+}> = ({ initialData, onSave, onCancel }) => {
+  const [formData, setFormData] = useState<ClassDateOption>({
+    date: initialData?.date || new Date(),
+    description: initialData?.description || "",
+    time: initialData?.time || "",
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+
+    if (name === "date") {
+      setFormData((prev) => ({ ...prev, [name]: new Date(value) }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.date) {
+      newErrors.date = "Date is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave(formData);
+    }
+  };
+
+  // Format date for input (YYYY-MM-DDTHH:mm)
+  const formatDateForInput = (date: Date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="mb-3">
+        <label htmlFor="date" className="form-label">
+          Date and Time <span className="text-danger">*</span>
+        </label>
+        <input
+          type="datetime-local"
+          className={`form-control ${errors.date ? "is-invalid" : ""}`}
+          id="date"
+          name="date"
+          value={formatDateForInput(formData.date)}
+          onChange={handleChange}
+        />
+        {errors.date && <div className="invalid-feedback">{errors.date}</div>}
+        <small className="text-muted">Example: 2025-11-06 13:44</small>
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="description" className="form-label">
+          Description
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="e.g., Full Week, Weekend Per day"
+        />
+        <small className="text-muted">
+          Example: "Full Week", "Weekend Per day"
+        </small>
+      </div>
+
+      <div className="mb-3">
+        <label htmlFor="time" className="form-label">
+          Time Schedule
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          id="time"
+          name="time"
+          value={formData.time}
+          onChange={handleChange}
+          placeholder="e.g., 9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
+        />
+        <small className="text-muted">
+          Example: "9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
+        </small>
+      </div>
+
+      <div className="d-flex justify-content-end gap-2 mt-3">
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          {initialData ? "Update Date" : "Add Date"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 export default function DynamicCourseForm({
   mode = "create",
   courseId,
@@ -711,7 +905,7 @@ export default function DynamicCourseForm({
   const router = useRouter();
   const isEditMode = mode === "edit";
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 7; // Updated to include Sessions step
+  const totalSteps = 8; // Updated to include TimeTable step
   const [accumulatedFormData, setAccumulatedFormData] = useState<
     Record<string, any>
   >({});
@@ -719,12 +913,17 @@ export default function DynamicCourseForm({
   const [faqs, setFaqs] = useState<Array<{ question: string; answer: string }>>(
     []
   );
+  const [timeTable, setTimeTable] = useState<ClassDateOption[]>([]);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showFaqForm, setShowFaqForm] = useState(false);
+  const [showTimeTableForm, setShowTimeTableForm] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState<number | null>(
     null
   );
   const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
+  const [editingTimeTableIndex, setEditingTimeTableIndex] = useState<
+    number | null
+  >(null);
 
   // API hooks
   const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
@@ -834,7 +1033,7 @@ export default function DynamicCourseForm({
     };
   }, [isEditMode, courseData]);
 
-  // Initialize sessions and FAQs from course data
+  // Initialize sessions, FAQs, and timeTable from course data
   React.useEffect(() => {
     if (isEditMode && courseData) {
       const course = courseData as any;
@@ -843,6 +1042,15 @@ export default function DynamicCourseForm({
       }
       if (course?.faqs) {
         setFaqs(course.faqs);
+      }
+      if (course?.timeTable) {
+        setTimeTable(
+          course.timeTable.map((entry: any) => ({
+            date: new Date(entry.date),
+            description: entry.description || "",
+            time: entry.time || "",
+          }))
+        );
       }
     }
   }, [isEditMode, courseData]);
@@ -1052,6 +1260,37 @@ export default function DynamicCourseForm({
     }
     setShowFaqForm(false);
     setEditingFaqIndex(null);
+  };
+
+  // TimeTable management functions
+  const addTimeTable = () => {
+    setEditingTimeTableIndex(null);
+    setShowTimeTableForm(true);
+  };
+
+  const editTimeTable = (index: number) => {
+    setEditingTimeTableIndex(index);
+    setShowTimeTableForm(true);
+  };
+
+  const deleteTimeTable = (index: number) => {
+    if (confirm("Are you sure you want to delete this class date?")) {
+      setTimeTable(timeTable.filter((_, i) => i !== index));
+    }
+  };
+
+  const saveTimeTable = (timeTableData: ClassDateOption) => {
+    if (editingTimeTableIndex !== null) {
+      // Edit existing timeTable entry
+      const updatedTimeTable = [...timeTable];
+      updatedTimeTable[editingTimeTableIndex] = timeTableData;
+      setTimeTable(updatedTimeTable);
+    } else {
+      // Add new timeTable entry
+      setTimeTable([...timeTable, timeTableData]);
+    }
+    setShowTimeTableForm(false);
+    setEditingTimeTableIndex(null);
   };
 
   // Dynamic form configuration
@@ -1373,6 +1612,26 @@ export default function DynamicCourseForm({
       case 7:
         return {
           ...baseConfig,
+          title: "Class Schedule (TimeTable)",
+          description: "Add class dates and schedule options",
+          submitText: isEditMode ? "Update Course" : "Next Step",
+          cancelText: "Previous",
+          fields: [
+            {
+              name: "timeTableManagement",
+              label: "Class Schedule",
+              type: "text", // We'll render custom content
+              placeholder: "",
+              validation: {},
+              description:
+                "Manage your class schedule using the interface below.",
+            },
+          ],
+        };
+
+      case 8:
+        return {
+          ...baseConfig,
           title: "Course Details",
           description:
             "Add learning objectives, requirements, and target audience",
@@ -1616,6 +1875,13 @@ export default function DynamicCourseForm({
               : [],
           })),
 
+        // TimeTable Processing - include all timeTable entries
+        timeTable: timeTable.map((entry) => ({
+          date: new Date(entry.date).toISOString(),
+          description: entry.description || "",
+          time: entry.time || "",
+        })),
+
         // Publishing & Status
         isPublished: data.isPublished || false,
         isFeatured: data.isFeatured || false,
@@ -1797,6 +2063,7 @@ export default function DynamicCourseForm({
                   <small className="text-muted">Pricing</small>
                   <small className="text-muted">FAQ</small>
                   <small className="text-muted">Sessions</small>
+                  <small className="text-muted">Schedule</small>
                   <small className="text-muted">Details</small>
                 </div>
               </div>
@@ -2167,16 +2434,182 @@ export default function DynamicCourseForm({
                   </div>
                 )}
 
-                {/* Regular Dynamic Form for other steps */}
-                {currentStep !== 5 && currentStep !== 6 && (
-                  <DynamicForm
-                    config={getFormConfig(currentStep)}
-                    initialData={isEditMode ? processedCourseData : {}}
-                    onSubmit={handleStepSubmit}
-                    onCancel={handleCancel}
-                    loading={isCreating || isUpdating}
-                  />
+                {/* TimeTable Management Interface */}
+                {currentStep === 7 && (
+                  <div className="timetable-management">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                      <div>
+                        <h5 className="mb-1">
+                          <FaCalendar className="me-2 text-primary" />
+                          Class Schedule ({timeTable.length})
+                        </h5>
+                        <small className="text-muted">
+                          Add class dates and time schedules for your course
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-lg"
+                        onClick={addTimeTable}
+                      >
+                        <FaPlus className="me-2" />
+                        Add New Date
+                      </button>
+                    </div>
+
+                    {timeTable.length === 0 ? (
+                      <div className="text-center py-5">
+                        <div
+                          className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                          style={{ width: "80px", height: "80px" }}
+                        >
+                          <FaCalendar className="text-muted" size={40} />
+                        </div>
+                        <h6 className="mb-2">No class dates added yet</h6>
+                        <p className="text-muted mb-4">
+                          Start by adding class dates and schedules for your
+                          course
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={addTimeTable}
+                        >
+                          <FaPlus className="me-2" />
+                          Add Your First Date
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <small className="text-muted">
+                            {timeTable.length} class date
+                            {timeTable.length !== 1 ? "s" : ""} scheduled
+                          </small>
+                        </div>
+                        <div className="timetable-list">
+                          {timeTable.map((entry, index) => (
+                            <div
+                              key={index}
+                              className="card mb-3 border-start border-4 border-success"
+                            >
+                              <div className="card-body">
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex align-items-center mb-2">
+                                      <span className="badge bg-success me-2">
+                                        Date {index + 1}
+                                      </span>
+                                      <h6 className="mb-0 fw-bold">
+                                        {new Date(
+                                          entry.date
+                                        ).toLocaleDateString("en-US", {
+                                          weekday: "long",
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </h6>
+                                    </div>
+                                    <div className="ps-4">
+                                      {entry.description && (
+                                        <p className="text-muted mb-1">
+                                          <strong>Description:</strong>{" "}
+                                          {entry.description}
+                                        </p>
+                                      )}
+                                      {entry.time && (
+                                        <p className="text-muted mb-0">
+                                          <strong>Time:</strong> {entry.time}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="btn-group">
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline-primary btn-sm"
+                                      onClick={() => editTimeTable(index)}
+                                      title="Edit Date"
+                                    >
+                                      <FaEdit />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline-danger btn-sm"
+                                      onClick={() => deleteTimeTable(index)}
+                                      title="Delete Date"
+                                    >
+                                      <FaTrash />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TimeTable Form */}
+                    {showTimeTableForm && (
+                      <div className="card mt-4 border-success">
+                        <div className="card-header bg-success text-white">
+                          <h6 className="mb-0">
+                            {editingTimeTableIndex !== null
+                              ? "Edit Class Date"
+                              : "Add New Class Date"}
+                          </h6>
+                        </div>
+                        <div className="card-body">
+                          <TimeTableForm
+                            initialData={
+                              editingTimeTableIndex !== null
+                                ? timeTable[editingTimeTableIndex]
+                                : undefined
+                            }
+                            onSave={saveTimeTable}
+                            onCancel={() => setShowTimeTableForm(false)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="d-flex justify-content-between mt-4">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={handleCancel}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          handleStepSubmit({});
+                        }}
+                      >
+                        Next Step
+                      </button>
+                    </div>
+                  </div>
                 )}
+
+                {/* Regular Dynamic Form for other steps */}
+                {currentStep !== 5 &&
+                  currentStep !== 6 &&
+                  currentStep !== 7 && (
+                    <DynamicForm
+                      config={getFormConfig(currentStep)}
+                      initialData={isEditMode ? processedCourseData : {}}
+                      onSubmit={handleStepSubmit}
+                      onCancel={handleCancel}
+                      loading={isCreating || isUpdating}
+                    />
+                  )}
               </div>
             </div>
           </div>
