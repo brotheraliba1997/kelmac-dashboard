@@ -7,7 +7,7 @@ function Layout({ children }: { children?: React.ReactNode }) {
     <>
       <Header />
       <Sidebar />
-      {children}
+      <div className="page-wrapper">{children}</div>
     </>
   );
 }

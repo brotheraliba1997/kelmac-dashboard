@@ -17,6 +17,7 @@ import { chatAPI } from "./services/chatAPI";
 import { walletAPI } from "./services/walletAPI";
 import { billingAPI } from "./services/billingAPI";
 import { PaymentAPI } from "./services/PaymentAPI";
+import { purchaseOrderApi } from "./services/purchaseOrderApi";
 import { NotificationAPI } from "./services/notificationAPI";
 import { DashboardAPI } from "./services/dashboardAPI";
 import { contactAPI } from "./services/contactAPI";
@@ -51,6 +52,7 @@ export const store = configureStore({
     [enrollmentApi.reducerPath]: enrollmentApi.reducer,
     [classScheduleApi.reducerPath]: classScheduleApi.reducer,
     [categoryApi.reducerPath]: categoryApi.reducer,
+    [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -71,7 +73,8 @@ export const store = configureStore({
       courseApi.middleware,
       enrollmentApi.middleware,
       classScheduleApi.middleware,
-      categoryApi.middleware
+      categoryApi.middleware,
+      purchaseOrderApi.middleware
     ),
 });
 setupListeners(store.dispatch);

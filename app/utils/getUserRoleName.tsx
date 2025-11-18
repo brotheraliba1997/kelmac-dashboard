@@ -9,6 +9,8 @@ export function GetUserRoleName(roleId?: number): string {
       return "instructor";
     case 4:
       return "corporate";
+    case 5:
+      return "finance";
     default:
       return "unknown";
   }
