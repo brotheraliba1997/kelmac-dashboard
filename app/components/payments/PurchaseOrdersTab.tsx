@@ -22,6 +22,8 @@ export default function PurchaseOrdersTab() {
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(
     null
   );
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState("");
 
   // Fetch Purchase Orders
   const {
@@ -39,6 +41,7 @@ export default function PurchaseOrdersTab() {
     useUpdatePurchaseOrderMutation();
 
   const handleOpenModal = (order: any, action: "approve" | "reject") => {
+    console.log("Opening modal for order:", order); // Debug log
     setSelectedOrder(order);
     setActionType(action);
     setDecisionNotes("");
@@ -52,8 +55,26 @@ export default function PurchaseOrdersTab() {
     setDecisionNotes("");
   };
 
+  const handleViewDocument = (url: string) => {
+    setSelectedImageUrl(url);
+    setShowImageModal(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImageUrl("");
+  };
+
   const handleSubmitDecision = async () => {
     if (!selectedOrder || !actionType) return;
+
+    // Validate that we have an ID
+    const orderId = selectedOrder._id || selectedOrder.id;
+    if (!orderId) {
+      toast.error("Invalid purchase order ID");
+      console.error("Purchase order object:", selectedOrder);
+      return;
+    }
 
     try {
       // Get current user ID from localStorage or auth state
@@ -61,7 +82,7 @@ export default function PurchaseOrdersTab() {
         localStorage.getItem("userId") || "675f4aaf2b67a23d4c9f2941";
 
       await updatePurchaseOrder({
-        id: selectedOrder._id,
+        id: orderId,
         status: actionType === "approve" ? "approved" : "rejected",
         reviewedBy: userId,
         reviewedAt: new Date().toISOString(),
@@ -93,34 +114,37 @@ export default function PurchaseOrdersTab() {
   // Purchase Orders Table Columns
   const purchaseOrdersColumns: Column<any>[] = [
     {
-      key: "poNumber",
+      key: "orderId",
       label: "PO Number",
       sortable: true,
       render: (order) => (
         <span className="text-blue-600 font-medium">
-          {order.poNumber || `#${order._id?.slice(-8)}`}
+          {order.orderId || order.poNumber || `#${order._id?.slice(-8)}`}
         </span>
       ),
     },
     {
-      key: "student",
+      key: "user",
       label: "Student",
       sortable: true,
-      render: (order) => (
-        <div className="flex items-center">
-          <img
-            className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-gray-200"
-            src={order.student?.avatar || "/default-avatar.png"}
-            alt="Student"
-          />
-          <div>
-            <div className="font-semibold text-gray-900">
-              {order.student?.firstName} {order.student?.lastName}
+      render: (order) => {
+        const student = order.user || order.student;
+        return (
+          <div className="flex items-center">
+            <img
+              className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-gray-200"
+              src={student?.avatar || "/default-avatar.png"}
+              alt="Student"
+            />
+            <div>
+              <div className="font-semibold text-gray-900">
+                {student?.firstName} {student?.lastName}
+              </div>
+              <div className="text-sm text-gray-500">{student?.email}</div>
             </div>
-            <div className="text-sm text-gray-500">{order.student?.email}</div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "course.title",
@@ -133,38 +157,35 @@ export default function PurchaseOrdersTab() {
       ),
     },
     {
-      key: "financialContact",
-      label: "Financial Contact",
+      key: "amount",
+      label: "Amount",
       sortable: true,
       render: (order) => (
-        <div>
-          <div className="font-medium text-gray-900">
-            {order.financialContact?.firstName}{" "}
-            {order.financialContact?.lastName}
-          </div>
-          <div className="text-sm text-gray-500">
-            {order.financialContact?.email}
-          </div>
-        </div>
+        <span className="font-semibold text-gray-900">
+          {new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: order.currency || "USD",
+          }).format(order.amount || 0)}
+        </span>
       ),
     },
     {
-      key: "bankSlipUrl",
-      label: "Bank Slip",
-      render: (order) =>
-        order.bankSlipUrl ? (
-          <a
-            href={order.bankSlipUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+      key: "documentUrl",
+      label: "Document",
+      render: (order) => {
+        const docUrl = order.documentUrl || order.bankSlipUrl;
+        return docUrl ? (
+          <button
+            onClick={() => handleViewDocument(docUrl)}
             className="inline-flex items-center px-3 py-1.5 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 text-sm font-medium transition-colors"
           >
             <FaFileInvoice className="mr-1.5" />
             View
-          </a>
+          </button>
         ) : (
           <span className="text-gray-400">No document</span>
-        ),
+        );
+      },
     },
     {
       key: "submittedAt",
@@ -227,7 +248,6 @@ export default function PurchaseOrdersTab() {
       label: "Status",
       type: "select",
       options: [
-        { value: "", label: "All Statuses" },
         { value: "pending", label: "Pending" },
         { value: "approved", label: "Approved" },
         { value: "rejected", label: "Rejected" },
@@ -253,17 +273,18 @@ export default function PurchaseOrdersTab() {
             : null
         }
         searchable={true}
-        searchPlaceholder="Search by PO number, student, or course..."
+        searchPlaceholder="Search by order ID, student, or course..."
         searchKeys={[
+          "orderId",
           "poNumber",
           "_id",
+          "user.firstName",
+          "user.lastName",
+          "user.email",
           "student.firstName",
           "student.lastName",
           "student.email",
           "course.title",
-          "financialContact.firstName",
-          "financialContact.lastName",
-          "financialContact.email",
         ]}
         filters={purchaseOrdersFilters}
         onFilterChange={handlePurchaseOrdersFilterChange}
@@ -325,9 +346,10 @@ export default function PurchaseOrdersTab() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">PO Number</p>
+                        <p className="text-sm text-gray-600 mb-1">Order ID</p>
                         <p className="font-semibold text-gray-900">
-                          {selectedOrder.poNumber ||
+                          {selectedOrder.orderId ||
+                            selectedOrder.poNumber ||
                             `#${selectedOrder._id?.slice(-8)}`}
                         </p>
                       </div>
@@ -342,17 +364,26 @@ export default function PurchaseOrdersTab() {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Student</p>
                         <p className="font-semibold text-gray-900">
-                          {selectedOrder.student?.firstName}{" "}
-                          {selectedOrder.student?.lastName}
+                          {
+                            (selectedOrder.user || selectedOrder.student)
+                              ?.firstName
+                          }{" "}
+                          {
+                            (selectedOrder.user || selectedOrder.student)
+                              ?.lastName
+                          }
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {(selectedOrder.user || selectedOrder.student)?.email}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          Financial Contact
-                        </p>
+                        <p className="text-sm text-gray-600 mb-1">Amount</p>
                         <p className="font-semibold text-gray-900">
-                          {selectedOrder.financialContact?.firstName}{" "}
-                          {selectedOrder.financialContact?.lastName}
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: selectedOrder.currency || "USD",
+                          }).format(selectedOrder.amount || 0)}
                         </p>
                       </div>
                       <div>
@@ -362,16 +393,20 @@ export default function PurchaseOrdersTab() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Bank Slip</p>
-                        {selectedOrder.bankSlipUrl ? (
-                          <a
-                            href={selectedOrder.bankSlipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <p className="text-sm text-gray-600 mb-1">Document</p>
+                        {selectedOrder.documentUrl ||
+                        selectedOrder.bankSlipUrl ? (
+                          <button
+                            onClick={() =>
+                              handleViewDocument(
+                                selectedOrder.documentUrl ||
+                                  selectedOrder.bankSlipUrl
+                              )
+                            }
                             className="text-blue-600 hover:text-blue-800 font-medium"
                           >
                             View Document
-                          </a>
+                          </button>
                         ) : (
                           <p className="text-gray-400">No document</p>
                         )}
@@ -480,6 +515,81 @@ export default function PurchaseOrdersTab() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image/Document Viewer Modal */}
+      {showImageModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 z-60 flex items-center justify-center p-4"
+          onClick={handleCloseImageModal}
+        >
+          <div
+            className="relative bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Document Viewer
+              </h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={selectedImageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                >
+                  Open in New Tab
+                </a>
+                <button
+                  type="button"
+                  className="text-gray-400 hover:text-gray-500 transition-colors p-1"
+                  onClick={handleCloseImageModal}
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-100 overflow-auto max-h-[calc(90vh-80px)]">
+              <div className="flex items-center justify-center">
+                <img
+                  src={selectedImageUrl}
+                  alt="Document"
+                  className="max-w-full h-auto rounded-lg shadow-lg"
+                  onError={(e) => {
+                    // If image fails to load, show a message
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `
+                        <div class="text-center p-8">
+                          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <p class="mt-2 text-sm text-gray-600">Unable to preview this document type.</p>
+                          <p class="mt-1 text-xs text-gray-500">Please use "Open in New Tab" to view the document.</p>
+                        </div>
+                      `;
+                    }
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

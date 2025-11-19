@@ -50,7 +50,7 @@ export default function StripePaymentsTab() {
       sortable: true,
       render: (payment) => (
         <span className="text-blue-600 font-medium">
-          #{payment.stripePaymentIntentId?.slice(-8) || payment._id?.slice(-8)}
+          #{payment?.stripePaymentIntentId || payment?._id || "N/A"}
         </span>
       ),
     },
@@ -169,7 +169,6 @@ export default function StripePaymentsTab() {
       label: "Status",
       type: "select",
       options: [
-        { value: "", label: "All Statuses" },
         { value: "pending", label: "Pending" },
         { value: "completed", label: "Completed" },
         { value: "succeeded", label: "Succeeded" },

@@ -61,10 +61,19 @@ export const purchaseOrderApi = createApi({
       PurchaseOrdersResponse,
       { page?: number; limit?: number; status?: string }
     >({
-      query: ({ page = 1, limit = 20, status = "pending" }) => ({
-        url: `/purchase-orders?page=${page}&limit=${limit}&status=${status}`,
-        method: "GET",
-      }),
+      query: ({ page = 1, limit = 20, status }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+        if (status) {
+          params.append("status", status);
+        }
+        return {
+          url: `/purchase-orders?${params.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: ["PurchaseOrders"],
     }),
 
@@ -74,7 +83,7 @@ export const purchaseOrderApi = createApi({
     >({
       query: ({ id, ...body }) => ({
         url: `/purchase-orders/${id}`,
-        method: "PUT",
+        method: "PATCH",
         body,
       }),
       invalidatesTags: ["PurchaseOrders"],

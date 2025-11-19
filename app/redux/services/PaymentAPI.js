@@ -23,10 +23,19 @@ export const PaymentAPI = createApi({
     }),
 
     getPayments: builder.query({
-      query: ({ page = 1, limit = 20, status = "pending" }) => ({
-        url: `/payment?page=${page}&limit=${limit}&status=${status}`,
-        method: "GET",
-      }),
+      query: ({ page = 1, limit = 20, status }) => {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+        });
+        if (status) {
+          params.append("status", status);
+        }
+        return {
+          url: `/payment?${params.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: ["Payments"],
     }),
   }),
