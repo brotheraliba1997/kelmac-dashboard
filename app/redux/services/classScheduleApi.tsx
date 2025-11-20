@@ -11,6 +11,11 @@ export const classScheduleApi = createApi({
       providesTags: ["ClassSchedule"],
     }),
 
+    getClassScheduleById: builder.query({
+      query: (id: string) => `/class-schedule/${id}`,
+      providesTags: ["ClassSchedule"],
+    }),
+
     createClassSchedule: builder.mutation({
       query: (body: any) => ({
         url: "/class-schedule",
@@ -22,5 +27,8 @@ export const classScheduleApi = createApi({
   }),
 });
 
-export const { useGetAllClassSchedulesQuery, useCreateClassScheduleMutation } =
-  classScheduleApi;
+export const {
+  useGetAllClassSchedulesQuery,
+  useGetClassScheduleByIdQuery,
+  useCreateClassScheduleMutation,
+} = classScheduleApi;

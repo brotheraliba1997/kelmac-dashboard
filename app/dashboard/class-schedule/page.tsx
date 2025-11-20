@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import MainDashboard from "@/app/components/dashboard--component/MainDashboard-component";
 import React, { use, useEffect, useState } from "react";
 import Table from "@/app/components/table/index";
@@ -10,6 +10,7 @@ import {
 import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useGetAllClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
+import { SiGoogleclassroom } from "react-icons/si";
 
 function ClassSchedule() {
   const [page, setPage] = useState(1);
@@ -19,7 +20,6 @@ function ClassSchedule() {
   console.log("Class Schedule Data:", data);
 
   const [pageSize, setPageSize] = useState(5);
-  
 
   const courses = (data as any)?.data || data || [];
   const totalEntries = courses.length;
@@ -30,110 +30,117 @@ function ClassSchedule() {
   const currentData = courses.slice(indexOfFirstItem, indexOfLastItem);
 
   const columns = [
-   {
-    displayName: "Course",
-    displayField: (e: any) => (
-      <div className="fw-semibold text-capitalize">
-        {e?.course?.title || "—"}
-      </div>
-    ),
-    searchable: true,
-  },
-
-  {
-    displayName: "Instructor",
-    displayField: (e: any) => (
-      <div className="fw-medium text-primary">
-        {e?.instructor?.firstName
-          ? `${e.instructor.firstName} ${e.instructor.lastName}`
-          : "—"}
-      </div>
-    ),
-    searchable: true,
-  },
-
-  {
-    displayName: "Date",
-    displayField: (e: any) => (
-      <span className="badge bg-light text-dark">{e?.date || "—"}</span>
-    ),
-    searchable: true,
-  },
-
-  {
-    displayName: "Time",
-    displayField: (e: any) => (
-      <span className="badge bg-info text-dark">{e?.time || "—"}</span>
-    ),
-    searchable: true,
-  },
-
-  {
-    displayName: "Duration",
-    displayField: (e: any) => (
-      <span className="badge bg-secondary">{e?.duration || 0} min</span>
-    ),
-    searchable: false,
-  },
-
-  {
-    displayName: "Meet Link",
-    displayField: (e: any) => (
-      <a
-        href={e?.googleMeetLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-decoration-none text-primary fw-medium"
-      >
-        {e?.googleMeetLink ? "Join Meeting" : "—"}
-      </a>
-    ),
-    searchable: false,
-  },
-
-  {
-    displayName: "Status",
-    displayField: (e: any) =>
-      e?.status === "scheduled" ? (
-        <span className="badge bg-success">Scheduled</span>
-      ) : e?.status === "cancelled" ? (
-        <span className="badge bg-danger">Cancelled</span>
-      ) : (
-        <span className="badge bg-warning text-dark">
-          {e?.status || "—"}
-        </span>
+    {
+      displayName: "Course",
+      displayField: (e: any) => (
+        <div className="fw-semibold text-capitalize">
+          {e?.course?.title || "—"}
+        </div>
       ),
-    searchable: true,
-  },
+      searchable: true,
+    },
 
-  {
-    displayName: "Actions",
-    displayField: (e: any) => (
-      <div className="d-flex gap-3">
-        <FaEye
-          className="text-primary"
-          style={{ cursor: "pointer" }}
-        //   onClick={() => handleView?.(e)}
-          title="View"
-        />
+    {
+      displayName: "Instructor",
+      displayField: (e: any) => (
+        <div className="fw-medium text-primary">
+          {e?.instructor?.firstName
+            ? `${e.instructor.firstName} ${e.instructor.lastName}`
+            : "—"}
+        </div>
+      ),
+      searchable: true,
+    },
 
-        <Link href={`/dashboard/class-schedule/${e?.id}`}>
-          <FaEdit
-            className="text-success"
+    {
+      displayName: "Date",
+      displayField: (e: any) => (
+        <span className="badge bg-light text-dark">{e?.date || "—"}</span>
+      ),
+      searchable: true,
+    },
+
+    {
+      displayName: "Time",
+      displayField: (e: any) => (
+        <span className="badge bg-info text-dark">{e?.time || "—"}</span>
+      ),
+      searchable: true,
+    },
+
+    {
+      displayName: "Duration",
+      displayField: (e: any) => (
+        <span className="badge bg-secondary">{e?.duration || 0} min</span>
+      ),
+      searchable: false,
+    },
+
+    {
+      displayName: "Meet Link",
+      displayField: (e: any) => (
+        <a
+          href={e?.googleMeetLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-decoration-none text-primary fw-medium"
+        >
+          {e?.googleMeetLink ? "Join Meeting" : "—"}
+        </a>
+      ),
+      searchable: false,
+    },
+
+    {
+      displayName: "Status",
+      displayField: (e: any) =>
+        e?.status === "scheduled" ? (
+          <span className="badge bg-success">Scheduled</span>
+        ) : e?.status === "cancelled" ? (
+          <span className="badge bg-danger">Cancelled</span>
+        ) : (
+          <span className="badge bg-warning text-dark">{e?.status || "—"}</span>
+        ),
+      searchable: true,
+    },
+
+    {
+      displayName: "Actions",
+      displayField: (e: any) => (
+        <div className="d-flex gap-3">
+          <Link href={`/dashboard/attendance/${e?.id}`}>
+            <SiGoogleclassroom
+              className="text-primary"
+              style={{ cursor: "pointer" }}
+              //   onClick={() => handleView?.(e)}
+              title="Attendance"
+            />
+          </Link>
+
+          <FaEye
+            className="text-primary"
             style={{ cursor: "pointer" }}
-            title="Edit"
+            //   onClick={() => handleView?.(e)}
+            title="View"
           />
-        </Link>
 
-        <FaTrash
-          className="text-danger"
-          style={{ cursor: "pointer" }}
-        //   onClick={() => handleDelete?.(e)}
-          title="Delete"
-        />
-      </div>
-    ),
-  },
+          <Link href={`/dashboard/class-schedule/${e?.id}`}>
+            <FaEdit
+              className="text-success"
+              style={{ cursor: "pointer" }}
+              title="Edit"
+            />
+          </Link>
+
+          <FaTrash
+            className="text-danger"
+            style={{ cursor: "pointer" }}
+            //   onClick={() => handleDelete?.(e)}
+            title="Delete"
+          />
+        </div>
+      ),
+    },
   ];
 
   return (

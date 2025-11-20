@@ -24,6 +24,7 @@ import { contactAPI } from "./services/contactAPI";
 import { courseApi } from "./services/courseApi";
 import { enrollmentApi } from "./services/enrollmentApi";
 import { classScheduleApi } from "./services/classScheduleApi";
+import { attendanceApi } from "./services/attendanceApi";
 import { categoryApi } from "./services/categoryApi";
 
 export const store = configureStore({
@@ -51,6 +52,7 @@ export const store = configureStore({
     [courseApi.reducerPath]: courseApi.reducer,
     [enrollmentApi.reducerPath]: enrollmentApi.reducer,
     [classScheduleApi.reducerPath]: classScheduleApi.reducer,
+    [attendanceApi.reducerPath]: attendanceApi.reducer,
     [categoryApi.reducerPath]: categoryApi.reducer,
     [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
   },
@@ -73,6 +75,7 @@ export const store = configureStore({
       courseApi.middleware,
       enrollmentApi.middleware,
       classScheduleApi.middleware,
+      attendanceApi.middleware,
       categoryApi.middleware,
       purchaseOrderApi.middleware
     ),
