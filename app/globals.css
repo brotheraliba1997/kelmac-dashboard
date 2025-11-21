@@ -4330,7 +4330,7 @@ table.table-inbox tbody tr.checked {
 }
 
 .page-wrapper {
-    margin-left: 240px;
+    margin-left: 120px;
     padding-top: 60px;
     position: relative;
     transition: all .4s ease

@@ -33,6 +33,7 @@ interface DynamicTableProps<T> {
   searchPlaceholder?: string;
   searchKeys?: string[];
   filters?: FilterConfig[];
+  pageTitle?: string;
   onFilterChange?: (filters: Record<string, any>) => void;
   pagination?: {
     total: number;
@@ -52,6 +53,7 @@ interface DynamicTableProps<T> {
 export default function DynamicTableTailwind<T extends Record<string, any>>({
   data,
   columns,
+  pageTitle,
   loading = false,
   error = null,
   searchable = true,
@@ -223,6 +225,14 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
 
   return (
     <div className={`w-full ${className}`}>
+      {pageTitle && (
+        <div className="page-header mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+            {pageTitle}
+          </h1>
+        </div>
+      )}
+
       {/* Search and Filters Bar */}
       {(searchable || filters.length > 0) && (
         <div className="mb-4">
@@ -453,7 +463,7 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
       </div>
 
       {/* Pagination */}
-      {pagination && pagination.totalPages > 1 && !loading && (
+      {pagination && !loading && (
         <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-700">
             Showing{" "}
