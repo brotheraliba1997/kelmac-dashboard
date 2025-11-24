@@ -1,30 +1,39 @@
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { baseQueryWithAuth } from './api';
-
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuth } from "./api";
 
 export const userAPI = createApi({
-  reducerPath: 'userAPI',
+  reducerPath: "userAPI",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ['Users'],
+  tagTypes: ["Users"],
   endpoints: (builder) => ({
     // ✅ Create User
     createUser: builder.mutation({
       query: (body) => ({
-        url: '/users',
-        method: 'POST',
+        url: "/users",
+        method: "POST",
         body,
       }),
-      invalidatesTags: ['Users'],
+      invalidatesTags: ["Users"],
     }),
 
     // ✅ Get All Users
     getUsers: builder.query({
-      query: (params) => ({
-        url: '/users',
-        method: 'GET',
-        params,
-      }),
-      providesTags: ['Users'],
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== "") {
+            searchParams.append(key, String(value));
+          }
+        });
+        const queryString = searchParams.toString();
+        return `/users${queryString ? `?${queryString}` : ""}`;
+      },
+      // query: (params) => ({
+      //   url: "/users",
+      //   method: "GET",
+      //   params,
+      // }),
+      providesTags: ["Users"],
     }),
 
     // ✅ Get One User by ID
@@ -36,19 +45,19 @@ export const userAPI = createApi({
     updateProfile: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/users/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body,
       }),
-      invalidatesTags: ['Users'],
+      invalidatesTags: ["Users"],
     }),
 
     // ✅ Delete User
     deleteUser: builder.mutation({
       query: (id) => ({
         url: `/users/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Users'],
+      invalidatesTags: ["Users"],
     }),
   }),
 });

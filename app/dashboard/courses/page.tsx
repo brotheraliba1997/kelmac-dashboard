@@ -1,19 +1,12 @@
 "use client";
-import MainDashboard from "@/app/components/dashboard--component/MainDashboard-component";
-import React, { use, useEffect, useState } from "react";
-import Table from "@/app/components/table/index";
-import Link from "next/link";
-import {
-  GetUserRoleName,
-  GetUserStatusName,
-} from "@/app/utils/getUserRoleName";
+
 import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
-// import DynamicTableTailwind from "@/app/components/table/DynamicTableTailwind";
 import DynamicTable, {
   Column,
   FilterConfig,
 } from "@/app/components/table/DynamicTableTailwind";
+import { useState } from "react";
 export default function CoursesPage() {
   // Filter state for table
   const [tableFilters, setTableFilters] = useState({
@@ -32,25 +25,11 @@ export default function CoursesPage() {
   });
 
   const { data, error, isLoading } = useGetAllCoursesQuery(tableFilters);
-  console.log("data from courses page==>", data);
+  console.log(isLoading, "data from courses page==>", data);
 
   const courses = (data as any)?.data || data || [];
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
-  // const totalEntries = courses.length;
-  // const totalPages = Math.ceil(totalEntries / pageSize);
-
-  // const indexOfLastItem = page * pageSize;
-  // const indexOfFirstItem = indexOfLastItem - pageSize;
-  // const currentData = courses.slice(indexOfFirstItem, indexOfLastItem);
-
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   const timer = setTimeout(() => {
-  //     setIsLoading(false);
-  //   }, 700);
-  //   return () => clearTimeout(timer);
-  // }, [page, pageSize]);
 
   const columns = [
     {
@@ -148,9 +127,7 @@ export default function CoursesPage() {
     //   ),
     // },
   ];
-  //  const [statusFilter, setStatusFilter] = useState("");
 
-  // Table filter configs
   const coursesFilters: FilterConfig[] = [
     {
       key: "search",
@@ -212,9 +189,7 @@ export default function CoursesPage() {
     },
   ];
 
-  // Table filter change handler
   const handleCoursesFilterChange = (filters: Record<string, any>) => {
-    // Only reset page if filters other than page/limit are changed
     const filterKeys = Object.keys(filters);
     const shouldResetPage = filterKeys.some(
       (key) => key !== "page" && key !== "limit"
@@ -227,7 +202,6 @@ export default function CoursesPage() {
     }));
   };
 
-  // Handle pagination change
   const handlePageChange = (page: number) => {
     setTableFilters((prev) => ({ ...prev, page }));
     setCurrentPage(page);
