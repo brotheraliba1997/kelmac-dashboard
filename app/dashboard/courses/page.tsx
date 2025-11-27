@@ -1,13 +1,38 @@
 "use client";
 
-import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import DynamicTable, {
   Column,
   FilterConfig,
 } from "@/app/components/table/DynamicTableTailwind";
+import {
+  useDeleteCourseMutation,
+  useGetAllCoursesQuery,
+} from "@/app/redux/services/courseApi";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+type CourseRow = {
+  id?: string;
+  title?: string;
+  description?: string;
+  instructor?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  price?: number;
+  sessions?: unknown[];
+};
+
+type CoursesApiResponse = {
+  data?: CourseRow[];
+  totalItems?: number;
+  currentPage?: number;
+  totalPages?: number;
+  limit?: number;
+};
+
 export default function CoursesPage() {
+  const router = useRouter();
   // Filter state for table
   const [tableFilters, setTableFilters] = useState({
     search: "",
@@ -25,18 +50,21 @@ export default function CoursesPage() {
   });
 
   const { data, error, isLoading } = useGetAllCoursesQuery(tableFilters);
-  console.log(isLoading, "data from courses page==>", data);
+  const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
-  const courses = (data as any)?.data || data || [];
+  const apiResponse: CoursesApiResponse | undefined = data as
+    | CoursesApiResponse
+    | undefined;
+  const courses = apiResponse?.data ?? [];
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
-  const columns = [
+  const columns: Column<CourseRow>[] = [
     {
       key: "title",
       label: "Title",
-      render: (e: any) => (
-        <div className="fw-semibold text-capitalize">{e?.title}</div>
+      render: (course) => (
+        <div className="fw-semibold text-capitalize">{course?.title}</div>
       ),
       sortable: true,
     },
@@ -44,9 +72,9 @@ export default function CoursesPage() {
     {
       key: "description",
       label: "Description",
-      render: (e: any) => (
+      render: (course) => (
         <div className="text-muted text-truncate" style={{ maxWidth: "250px" }}>
-          {e?.description || "—"}
+          {course?.description || "—"}
         </div>
       ),
       sortable: true,
@@ -55,11 +83,11 @@ export default function CoursesPage() {
     {
       key: "instructor",
       label: "Instructor",
-      render: (e: any) => (
+      render: (course) => (
         <div className="fw-medium text-primary">
-          {e?.instructor?.firstName
-            ? `${e.instructor.firstName} ${e.instructor.lastName}`
-            : e?.instructor || "—"}
+          {course?.instructor?.firstName
+            ? `${course.instructor.firstName} ${course.instructor.lastName}`
+            : "—"}
         </div>
       ),
       sortable: true,
@@ -68,9 +96,9 @@ export default function CoursesPage() {
     {
       key: "price",
       label: "Price",
-      render: (e: any) => (
+      render: (course) => (
         <span className="badge bg-info">
-          ${Number(e?.price || 0).toFixed(2)}
+          ${Number(course?.price || 0).toFixed(2)}
         </span>
       ),
       sortable: true,
@@ -79,9 +107,9 @@ export default function CoursesPage() {
     {
       key: "sessions",
       label: "Sessions",
-      render: (e: any) => (
+      render: (course) => (
         <span className="badge bg-secondary">
-          {e?.sessions?.length || 0} Sessions
+          {course?.sessions?.length || 0} Sessions
         </span>
       ),
       sortable: false,
@@ -98,34 +126,6 @@ export default function CoursesPage() {
     //   sortable: true,
     // },
 
-    // {
-    //   label: "Actions",
-    //   render: (e: any) => (
-    //     <div className="d-flex gap-3">
-    //       <FaEye
-    //         className="text-primary"
-    //         style={{ cursor: "pointer" }}
-    //         // onClick={() => handleView(e)}
-    //         title="View"
-    //       />
-
-    //       <Link href={`/dashboard/courses/${e?.id}`}>
-    //         <FaEdit
-    //           className="text-success"
-    //           style={{ cursor: "pointer" }}
-    //           // onClick={() => handleEdit(e)}
-    //           title="Edit"
-    //         />
-    //       </Link>
-    //       <FaTrash
-    //         className="text-danger"
-    //         style={{ cursor: "pointer" }}
-    //         // onClick={() => handleDelete(e)}
-    //         title="Delete"
-    //       />
-    //     </div>
-    //   ),
-    // },
   ];
 
   const coursesFilters: FilterConfig[] = [
@@ -189,16 +189,17 @@ export default function CoursesPage() {
     },
   ];
 
-  const handleCoursesFilterChange = (filters: Record<string, any>) => {
+  const handleCoursesFilterChange = (filters: Record<string, unknown>) => {
     const filterKeys = Object.keys(filters);
     const shouldResetPage = filterKeys.some(
       (key) => key !== "page" && key !== "limit"
     );
+    const typedFilters = filters as Partial<typeof tableFilters>;
     setTableFilters((prev) => ({
       ...prev,
-      ...filters,
-      page: shouldResetPage ? 1 : filters.page ?? prev.page,
-      limit: filters.limit ?? prev.limit,
+      ...typedFilters,
+      page: shouldResetPage ? 1 : typedFilters.page ?? prev.page,
+      limit: typedFilters.limit ?? prev.limit,
     }));
   };
 
@@ -209,6 +210,23 @@ export default function CoursesPage() {
   const handleLimitChange = (newLimit: number) => {
     setTableFilters((prev) => ({ ...prev, limit: newLimit, page: 1 }));
     setLimit(newLimit);
+  };
+
+  const handleAddCourse = () => router.push("/dashboard/courses/create");
+  const handleViewCourse = (course: CourseRow) => {
+    if (!course?.id) return;
+    router.push(`/dashboard/courses/${course.id}`);
+  };
+  const handleEditCourse = handleViewCourse;
+  const handleDeleteCourse = async (course: CourseRow) => {
+    if (!course?.id || isDeleting) return;
+    const confirmed = window.confirm("Delete this course?");
+    if (!confirmed) return;
+    try {
+      await deleteCourse(course.id).unwrap();
+    } catch (err) {
+      console.error("Failed to delete course", err);
+    }
   };
 
   return (
@@ -230,19 +248,32 @@ export default function CoursesPage() {
           filters={coursesFilters}
           onFilterChange={handleCoursesFilterChange}
           pagination={
-            data
+            apiResponse && apiResponse.totalItems
               ? {
-                  total: data.totalItems,
-                  currentPage: data.currentPage,
-                  totalPages: data.totalPages,
-                  pageSize: data.limit,
+                  total: apiResponse.totalItems,
+                  currentPage: apiResponse.currentPage ?? currentPage,
+                  totalPages: apiResponse.totalPages ?? 1,
+                  pageSize: apiResponse.limit ?? limit,
                   onPageChange: handlePageChange,
                   onPageSizeChange: handleLimitChange,
                   pageSizeOptions: [4, 10, 20, 50, 100],
                 }
-              : undefined
+              : {
+                  total: courses.length,
+                  currentPage,
+                  totalPages: Math.max(1, Math.ceil(courses.length / limit)),
+                  pageSize: limit,
+                  onPageChange: handlePageChange,
+                  onPageSizeChange: handleLimitChange,
+                  pageSizeOptions: [4, 10, 20, 50, 100],
+                }
           }
           emptyMessage="No courses found"
+          onAdd={handleAddCourse}
+          addButtonLabel="Add Course"
+          onView={handleViewCourse}
+          onEdit={handleEditCourse}
+          onDelete={handleDeleteCourse}
         />
       </div>
     </div>

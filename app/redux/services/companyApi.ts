@@ -4,19 +4,19 @@ import { baseQueryWithAuth } from "./api";
 export const companyApi = createApi({
   reducerPath: "companyApi",
   baseQuery: baseQueryWithAuth,
-  endpoints: (builder: any) => ({
-    getAllCompanies: builder.query({
+  endpoints: (builder) => ({
+    getAllCompanies: builder.query<unknown, void>({
       query: () => "/companies",
       providesTags: ["Company"],
     }),
 
-    getCompanyById: builder.query({
-      query: (id: any) => `/companies/${id}`,
+    getCompanyById: builder.query<unknown, string>({
+      query: (id) => `/companies/${id}`,
       providesTags: ["Company"],
     }),
 
-    createCompany: builder.mutation({
-      query: (data: any) => ({
+    createCompany: builder.mutation<unknown, Record<string, unknown>>({
+      query: (data) => ({
         url: "/companies",
         method: "POST",
         body: data,
@@ -24,8 +24,11 @@ export const companyApi = createApi({
       invalidatesTags: ["Company"],
     }),
 
-    updateCompany: builder.mutation({
-      query: ({ id, ...data }: any) => ({
+    updateCompany: builder.mutation<
+      unknown,
+      { id: string; [key: string]: unknown }
+    >({
+      query: ({ id, ...data }) => ({
         url: `/companies/${id}`,
         method: "PUT",
         body: data,

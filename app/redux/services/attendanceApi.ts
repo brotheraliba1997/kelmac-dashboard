@@ -5,7 +5,7 @@ export const attendanceApi = createApi({
   reducerPath: "attendanceApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["Attendance"],
-  endpoints: (builder: any) => ({
+  endpoints: (builder) => ({
     // Bulk attendance marking
     markBulkAttendance: builder.mutation({
       query: (body: {

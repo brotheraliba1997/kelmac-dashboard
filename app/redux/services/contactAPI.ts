@@ -1,12 +1,24 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
 
+type ContactQueryArgs = {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+  status?: string;
+};
+
+type ContactMutationArgs = {
+  id: string;
+  payload: Record<string, unknown>;
+};
+
 export const contactAPI = createApi({
   reducerPath: "contactAPI",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["refetchContact"],
   endpoints: (builder) => ({
-    getContact: builder.query({
+    getContact: builder.query<unknown, ContactQueryArgs | void>({
       query: ({
         page = 1,
         pageSize = 10,
@@ -20,7 +32,7 @@ export const contactAPI = createApi({
       providesTags: ["refetchContact"],
     }),
 
-    postContact: builder.mutation({
+    postContact: builder.mutation<unknown, Record<string, unknown>>({
       query: (payload) => ({
         url: "/contact",
         method: "POST",
@@ -28,7 +40,7 @@ export const contactAPI = createApi({
       }),
     }),
 
-    UpdateContact: builder.mutation({
+    UpdateContact: builder.mutation<unknown, ContactMutationArgs>({
       query: ({ payload, id }) => ({
         url: `/contact/${id}`,
         method: "PATCH",

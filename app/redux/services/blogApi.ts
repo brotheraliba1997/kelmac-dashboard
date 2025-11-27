@@ -4,19 +4,19 @@ import { baseQueryWithAuth } from "./api";
 export const blogApi = createApi({
   reducerPath: "blogApi",
   baseQuery: baseQueryWithAuth,
-  endpoints: (builder: any) => ({
-    getAllBlogs: builder.query({
+  endpoints: (builder) => ({
+    getAllBlogs: builder.query<unknown, void>({
       query: () => "/blogs",
       providesTags: ["Blog"],
     }),
 
-    getBlogById: builder.query({
-      query: (id: any) => `/blogs/${id}`,
+    getBlogById: builder.query<unknown, string>({
+      query: (id) => `/blogs/${id}`,
       providesTags: ["Blog"],
     }),
 
-    createBlog: builder.mutation({
-      query: (data: any) => ({
+    createBlog: builder.mutation<unknown, Record<string, unknown>>({
+      query: (data) => ({
         url: "/blogs",
         method: "POST",
         body: data,

@@ -1,5 +1,27 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
+
 import { baseQueryWithAuth } from "./api";
+
+type PaginationArgs = {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+  status?: string;
+};
+
+type FindWorkArgs = PaginationArgs;
+
+type JobProposalPayload = {
+  payload: Record<string, unknown>;
+  id: string;
+};
+
+type JobProposalsQueryArgs = PaginationArgs & { id: string };
+
+type ReviewPayload = {
+  id: string;
+  payload: Record<string, unknown>;
+};
 
 export const JobAPI = createApi({
   reducerPath: "jobAPI",
@@ -10,7 +32,7 @@ export const JobAPI = createApi({
     "refetchJobPost, refetchJobProposals",
   ],
   endpoints: (builder) => ({
-    createJobPost: builder.mutation({
+    createJobPost: builder.mutation<unknown, Record<string, unknown>>({
       query: (payload) => ({
         url: "/jobPosts",
         method: "POST",
@@ -19,26 +41,25 @@ export const JobAPI = createApi({
       invalidatesTags: ["refetchJobs"],
     }),
 
-    getJobPosts: builder.query({
+    getJobPosts: builder.query<unknown, PaginationArgs | void>({
       query: ({
         page = 1,
         pageSize = 10,
         sort = "asc",
         status = "Pending",
-      }) => ({
+      }: PaginationArgs = {}) => ({
         url: "/jobPosts",
         method: "GET",
         params: { page, pageSize, sort, role: "client", status },
       }),
       providesTags: ["refetchJobs"],
     }),
-    findWork: builder.query({
+    findWork: builder.query<unknown, FindWorkArgs | void>({
       query: ({
         page = 1,
-        pageSize = 10,
         sort = "asc",
         status = "Pending",
-      }) => ({
+      }: FindWorkArgs = {}) => ({
         url: "/jobPosts",
         method: "GET",
         params: { page, pageSize: 20, sort, status },
@@ -63,7 +84,7 @@ export const JobAPI = createApi({
       },
     }),
 
-    getJobPostById: builder.query({
+    getJobPostById: builder.query<unknown, string>({
       query: (id) => ({
         url: `/jobPosts/${id}`,
         method: "GET",
@@ -71,7 +92,7 @@ export const JobAPI = createApi({
       providesTags: ["refetchJobPost"],
     }),
 
-    sendJobProposal: builder.mutation({
+    sendJobProposal: builder.mutation<unknown, JobProposalPayload>({
       query: ({ payload, id }) => ({
         url: `/jobPosts/${id}/proposals`,
         method: "POST",
@@ -80,7 +101,7 @@ export const JobAPI = createApi({
       invalidatesTags: ["refetchJobPost"],
     }),
 
-    getJobProposals: builder.query({
+    getJobProposals: builder.query<unknown, JobProposalsQueryArgs>({
       query: ({ page = 1, pageSize = 10, sort = "asc", id }) => ({
         url: `/jobPosts/${id}/proposals`,
         method: "GET",
@@ -89,7 +110,7 @@ export const JobAPI = createApi({
       providesTags: ["refetchJobProposals"],
     }),
 
-    acceptJobProposal: builder.mutation({
+    acceptJobProposal: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/jobProposals/${id}/accept`,
         method: "GET",
@@ -101,13 +122,13 @@ export const JobAPI = createApi({
       ],
     }),
 
-    getJobContracts: builder.query({
+    getJobContracts: builder.query<unknown, PaginationArgs | void>({
       query: ({
         page = 1,
         pageSize = 10,
         sort = "asc",
         status = "in_progress",
-      }) => ({
+      }: PaginationArgs = {}) => ({
         url: "/jobContracts",
         method: "GET",
         params: { page, pageSize, sort, status },
@@ -115,7 +136,7 @@ export const JobAPI = createApi({
       providesTags: ["refetchJobsContracts"],
     }),
 
-    getJobContractById: builder.query({
+    getJobContractById: builder.query<unknown, string>({
       query: (id) => ({
         url: `/jobContracts/${id}`,
         method: "GET",
@@ -123,21 +144,21 @@ export const JobAPI = createApi({
       providesTags: ["refetchJobsContracts"],
     }),
 
-    endCall: builder.mutation({
+    endCall: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/jobContracts/${id}/endCall`,
         method: "GET",
       }),
     }),
 
-    startCall: builder.mutation({
+    startCall: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/jobContracts/${id}/startCall`,
         method: "GET",
       }),
     }),
 
-    submitReview: builder.mutation({
+    submitReview: builder.mutation<unknown, ReviewPayload>({
       query: ({ id, payload }) => ({
         url: `/jobContracts/${id}/review`,
         method: "POST",

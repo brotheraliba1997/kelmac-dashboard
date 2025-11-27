@@ -2,11 +2,19 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 
 import { baseQueryWithoutAuth } from "./api";
 
+type LoginPayload = {
+  email: string;
+  password: string;
+};
+
+type InterpreterRegistration = Record<string, unknown>;
+type UpdatePasswordPayload = Record<string, unknown>;
+
 export const authAPI = createApi({
   reducerPath: "authAPI",
-  baseQuery: baseQueryWithoutAuth, // Set default base query to the one with auth headers
+  baseQuery: baseQueryWithoutAuth,
   endpoints: (builder) => ({
-    loginUser: builder.mutation({
+    loginUser: builder.mutation<unknown, LoginPayload>({
       query: (credentials) => ({
         url: "/email/login",
         method: "POST",
@@ -14,7 +22,7 @@ export const authAPI = createApi({
       }),
     }),
 
-    forgotPassword: builder.mutation({
+    forgotPassword: builder.mutation<unknown, { email: string }>({
       query: (credentials) => ({
         url: "/forgot-password",
         method: "POST",
@@ -22,14 +30,14 @@ export const authAPI = createApi({
       }),
     }),
 
-    verifyToken: builder.mutation({
-      query: (credentials) => ({
-        url: `/verify-token?token=${credentials}`,
+    verifyToken: builder.mutation<unknown, string>({
+      query: (token) => ({
+        url: `/verify-token?token=${token}`,
         method: "GET",
       }),
     }),
 
-    UpdatePassword: builder.mutation({
+    UpdatePassword: builder.mutation<unknown, UpdatePasswordPayload>({
       query: (payload) => ({
         url: `/update-password`,
         method: "PATCH",
@@ -37,7 +45,7 @@ export const authAPI = createApi({
       }),
     }),
 
-    RegisterInterpreter: builder.mutation({
+    RegisterInterpreter: builder.mutation<unknown, InterpreterRegistration>({
       query: (payload) => ({
         url: "/register",
         method: "POST",

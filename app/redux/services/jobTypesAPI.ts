@@ -1,17 +1,17 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
 
-export const JobServicesAPI = createApi({
-  reducerPath: "JobServicesAPI",
+export const JobTypesAPI = createApi({
+  reducerPath: "jobTypesAPI",
   baseQuery: baseQueryWithAuth,
   endpoints: (builder) => ({
-    getJobServices: builder.query({
+    getJobTypesAPI: builder.query<unknown, void>({
       query: () => ({
-        url: "/jobServices/all",
+        url: "/jobTypes/all",
         method: "GET",
       }),
     }),
   }),
 });
 
-export const { useGetJobServicesQuery  } = JobServicesAPI;
+export const { useGetJobTypesAPIQuery } = JobTypesAPI;

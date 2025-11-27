@@ -40,9 +40,9 @@ export const enrollmentApi = createApi({
   reducerPath: "enrollmentApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["Enrollment", "Course", "User"],
-  endpoints: (builder: any) => ({
+  endpoints: (builder) => ({
     // Get all enrollments with pagination, filtering, sorting, and search
-    getAllEnrollments: builder.query({
+    getAllEnrollments: builder.query<unknown, EnrollmentQueryParams | void>({
       query: (params: EnrollmentQueryParams = {}) => {
         const {
           page = 1,
@@ -81,13 +81,13 @@ export const enrollmentApi = createApi({
     }),
 
     // Get enrollment by ID
-    getEnrollmentById: builder.query({
+    getEnrollmentById: builder.query<unknown, string>({
       query: (id: string) => `/enrollments/${id}`,
       providesTags: ["Enrollment"],
     }),
 
     // Create new enrollment
-    createEnrollment: builder.mutation({
+    createEnrollment: builder.mutation<unknown, CreateEnrollmentData>({
       query: (data: CreateEnrollmentData) => ({
         url: "/enrollments",
         method: "POST",
@@ -97,8 +97,8 @@ export const enrollmentApi = createApi({
     }),
 
     // Enroll in course (simple enrollment)
-    enrollInCourse: builder.mutation({
-      query: (courseId: any) => ({
+    enrollInCourse: builder.mutation<unknown, string>({
+      query: (courseId) => ({
         url: `/enrollments/${courseId}`,
         method: "POST",
       }),
@@ -106,9 +106,8 @@ export const enrollmentApi = createApi({
     }),
 
     // Update enrollment
-    updateEnrollment: builder.mutation({
+    updateEnrollment: builder.mutation<unknown, UpdateEnrollmentData>({
       query: ({ id, data }: UpdateEnrollmentData) => {
-        console.log("Updating enrollment with ID and data =>", id, data);
         return {
           url: `/enrollments/${id}`,
           method: "PATCH",
@@ -119,7 +118,7 @@ export const enrollmentApi = createApi({
     }),
 
     // Delete enrollment
-    deleteEnrollment: builder.mutation({
+    deleteEnrollment: builder.mutation<unknown, string>({
       query: (id: string) => ({
         url: `/enrollments/${id}`,
         method: "DELETE",
@@ -128,7 +127,7 @@ export const enrollmentApi = createApi({
     }),
 
     // Get user's enrollments
-    getUserEnrollments: builder.query({
+    getUserEnrollments: builder.query<unknown, EnrollmentQueryParams | void>({
       query: (params: EnrollmentQueryParams = {}) => {
         const {
           page = 1,
@@ -155,7 +154,10 @@ export const enrollmentApi = createApi({
     }),
 
     // Get course enrollments (for instructors/admins)
-    getCourseEnrollments: builder.query({
+    getCourseEnrollments: builder.query<
+      unknown,
+      { courseId: string } & EnrollmentQueryParams
+    >({
       query: ({
         courseId,
         ...params
@@ -185,8 +187,11 @@ export const enrollmentApi = createApi({
     }),
 
     // Bulk update enrollments
-    bulkUpdateEnrollments: builder.mutation({
-      query: (data: { ids: string[]; updates: any }) => ({
+    bulkUpdateEnrollments: builder.mutation<
+      unknown,
+      { ids: string[]; updates: Record<string, unknown> }
+    >({
+      query: (data) => ({
         url: "/enrollments/bulk-update",
         method: "PATCH",
         body: data,
@@ -195,12 +200,15 @@ export const enrollmentApi = createApi({
     }),
 
     // Get enrollment statistics
-    getEnrollmentStats: builder.query({
-      query: (params: {
+    getEnrollmentStats: builder.query<
+      unknown,
+      {
         courseId?: string;
         userId?: string;
         dateRange?: string;
-      }) => {
+      }
+    >({
+      query: (params) => {
         const queryParams = new URLSearchParams();
 
         if (params.courseId) queryParams.append("courseId", params.courseId);

@@ -9,11 +9,11 @@ export interface Course {
   instructor?: {
     firstName?: string;
     lastName?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   price?: number;
-  sessions?: any[];
-  [key: string]: any;
+  sessions?: unknown[];
+  [key: string]: unknown;
 }
 
 export interface CoursePagination {
@@ -25,13 +25,16 @@ export interface CoursePagination {
   totalItems: number;
   totalPages: number;
 }
+type CourseQueryParams = Record<string, string | number | boolean | undefined>;
+type CoursePayload = Record<string, unknown>;
+
 export const courseApi = createApi({
   reducerPath: "courseApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["Course"],
   endpoints: (builder) => ({
-    getAllCourses: builder.query<CoursePagination, Record<string, any>>({
-      query: (params = {}) => {
+    getAllCourses: builder.query<CoursePagination, CourseQueryParams | void>({
+      query: (params: CourseQueryParams = {}) => {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
           if (value !== undefined && value !== "") {
@@ -44,14 +47,14 @@ export const courseApi = createApi({
       providesTags: ["Course"],
     }),
 
-    getCourseById: builder.query({
-      query: (id: any) => `/courses/${id}`,
+    getCourseById: builder.query<unknown, string>({
+      query: (id) => `/courses/${id}`,
 
       providesTags: ["Course"],
     }),
 
-    createCourse: builder.mutation({
-      query: (data: any) => ({
+    createCourse: builder.mutation<unknown, CoursePayload>({
+      query: (data) => ({
         url: "/courses",
         method: "POST",
         body: data,
@@ -59,20 +62,20 @@ export const courseApi = createApi({
       invalidatesTags: ["Course"],
     }),
 
-    updateCourse: builder.mutation({
-      query: ({ id, data }: { id: any; data: any }) => {
-        console.log("Updating course with ID and data =>", id, data);
-        return {
-          url: `/courses/${id}`,
-          method: "PATCH",
-          body: data,
-        };
-      },
+    updateCourse: builder.mutation<
+      unknown,
+      { id: string; data: CoursePayload }
+    >({
+      query: ({ id, data }) => ({
+        url: `/courses/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
       invalidatesTags: ["Course"],
     }),
 
-    deleteCourse: builder.mutation({
-      query: (id: any) => ({
+    deleteCourse: builder.mutation<unknown, string>({
+      query: (id) => ({
         url: `/courses/${id}`,
         method: "DELETE",
       }),

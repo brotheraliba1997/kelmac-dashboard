@@ -1,13 +1,8 @@
 "use client";
-import MainDashboard from "@/app/components/dashboard--component/MainDashboard-component";
 import React, { use, useEffect, useState } from "react";
 import Table from "@/app/components/table/index";
 import Link from "next/link";
-import {
-  GetUserRoleName,
-  GetUserStatusName,
-} from "@/app/utils/getUserRoleName";
-import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
+
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { useGetAllClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
 import { SiGoogleclassroom } from "react-icons/si";

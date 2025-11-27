@@ -5,19 +5,22 @@ export const classScheduleApi = createApi({
   reducerPath: "classScheduleApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["ClassSchedule"],
-  endpoints: (builder: any) => ({
-    getAllClassSchedules: builder.query({
+  endpoints: (builder) => ({
+    getAllClassSchedules: builder.query<unknown, void>({
       query: () => "/class-schedule",
       providesTags: ["ClassSchedule"],
     }),
 
-    getClassScheduleById: builder.query({
+    getClassScheduleById: builder.query<unknown, string>({
       query: (id: string) => `/class-schedule/${id}`,
       providesTags: ["ClassSchedule"],
     }),
 
-    createClassSchedule: builder.mutation({
-      query: (body: any) => ({
+    createClassSchedule: builder.mutation<
+      unknown,
+      Record<string, unknown>
+    >({
+      query: (body) => ({
         url: "/class-schedule",
         method: "POST",
         body,

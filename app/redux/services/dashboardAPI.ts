@@ -5,13 +5,13 @@ export const DashboardAPI = createApi({
   reducerPath: "DashboardAPI",
   baseQuery: baseQueryWithAuth, // Set default base query to the one with auth headers
   endpoints: (builder) => ({
-    getAdminDashboardStats: builder.query({
+    getAdminDashboardStats: builder.query<unknown, void>({
       query: () => ({
         url: "/stats/admin",
         method: "GET",
       }),
     }),
-    getUserDashboardStats: builder.query({
+    getUserDashboardStats: builder.query<unknown, void>({
       query: () => ({
         url: "/stats",
         method: "GET",

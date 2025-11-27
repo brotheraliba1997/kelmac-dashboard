@@ -1,12 +1,19 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
 
+type ChatIdArg = string;
+
+type MessagePayloadArgs = {
+  id: string;
+  payload: Record<string, unknown>;
+};
+
 export const chatAPI = createApi({
   reducerPath: "ChatAPI",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["refetchChatRoom"],
   endpoints: (builder) => ({
-    getAllChats: builder.query({
+    getAllChats: builder.query<unknown, void>({
       query: () => ({
         url: `/chats/all`,
         method: "GET",
@@ -14,14 +21,14 @@ export const chatAPI = createApi({
       invalidatesTags: ["refetchChatRoom"],
     }),
 
-    getChatMessage: builder.mutation({
+    getChatMessage: builder.mutation<unknown, ChatIdArg>({
       query: (id) => ({
         url: `/chats/${id}/messages`,
         method: "GET",
       }),
     }),
 
-    getMessagesByChatId: builder.mutation({
+    getMessagesByChatId: builder.mutation<unknown, { id: string }>({
       query: ({ id }) => ({
         url: `/chats/${id}/messages`,
         method: "GET",
@@ -29,7 +36,7 @@ export const chatAPI = createApi({
       }),
     }),
 
-    sentMessage: builder.mutation({
+    sentMessage: builder.mutation<unknown, MessagePayloadArgs>({
       query: ({ payload, id }) => ({
         url: `/chats/${id}/messages`,
         method: "POST",

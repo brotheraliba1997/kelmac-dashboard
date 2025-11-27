@@ -10,17 +10,13 @@ interface CategoryFilters {
   isFeatured?: boolean;
 }
 
-interface CategoryStatusFilter {
-  isActive?: boolean;
-}
-
 export const categoryApi = createApi({
   reducerPath: "categoryApi",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["Category"],
   endpoints: (builder) => ({
     // Get all categories with pagination and filters
-    getCategories: builder.query({
+    getCategories: builder.query<unknown, CategoryFilters | void>({
       query: ({
         page = 1,
         limit = 10,
@@ -41,13 +37,13 @@ export const categoryApi = createApi({
     }),
 
     // Get category by ID
-    getCategoryById: builder.query({
-      query: (id) => `/categories/${id}`,
+    getCategoryById: builder.query<unknown, string>({
+      query: (id: string) => `/categories/${id}`,
       providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
     // Create new category
-    createCategory: builder.mutation({
+    createCategory: builder.mutation<unknown, Record<string, unknown>>({
       query: (data) => ({
         url: "/categories",
         method: "POST",
@@ -57,7 +53,10 @@ export const categoryApi = createApi({
     }),
 
     // Update category
-    updateCategory: builder.mutation({
+    updateCategory: builder.mutation<
+      unknown,
+      { id: string; data: Record<string, unknown> }
+    >({
       query: ({ id, data }) => ({
         url: `/categories/${id}`,
         method: "PATCH",
@@ -70,7 +69,7 @@ export const categoryApi = createApi({
     }),
 
     // Delete category
-    deleteCategory: builder.mutation({
+    deleteCategory: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/categories/${id}`,
         method: "DELETE",
@@ -82,7 +81,7 @@ export const categoryApi = createApi({
     }),
 
     // Toggle category active status
-    toggleCategoryStatus: builder.mutation({
+    toggleCategoryStatus: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/categories/${id}/toggle-status`,
         method: "PATCH",
@@ -94,7 +93,7 @@ export const categoryApi = createApi({
     }),
 
     // Toggle category featured status
-    toggleCategoryFeatured: builder.mutation({
+    toggleCategoryFeatured: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/categories/${id}/toggle-featured`,
         method: "PATCH",
@@ -106,13 +105,13 @@ export const categoryApi = createApi({
     }),
 
     // Get featured categories
-    getFeaturedCategories: builder.query({
+    getFeaturedCategories: builder.query<unknown, void>({
       query: () => "/categories/featured",
       providesTags: ["Category"],
     }),
 
     // Search categories
-    searchCategories: builder.query({
+    searchCategories: builder.query<unknown, string>({
       query: (searchTerm) => {
         const params = new URLSearchParams({
           search: searchTerm,

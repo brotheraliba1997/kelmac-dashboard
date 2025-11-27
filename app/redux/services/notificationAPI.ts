@@ -1,13 +1,19 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
+
 import { baseQueryWithAuth } from "./api";
+
+type NotificationQueryArgs = {
+  page?: number;
+  pageSize?: number;
+};
 
 export const NotificationAPI = createApi({
   reducerPath: "notificationAPI",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["refetchNotification"],
   endpoints: (builder) => ({
-    getNotificationAPI: builder.query({
-      query: ({ page = 1, pageSize = 10 }) => ({
+    getNotificationAPI: builder.query<unknown, NotificationQueryArgs | void>({
+      query: ({ page = 1 }: NotificationQueryArgs = {}) => ({
         url: `/notifications/`,
         method: "GET",
         params: { page, limit: 6 },
@@ -37,7 +43,7 @@ export const NotificationAPI = createApi({
       },
     }),
 
-    updateNotification: builder.mutation({
+    updateNotification: builder.mutation<unknown, string>({
       query: (id) => ({
         url: `/notifications/${id}/read`,
         method: "PATCH",
@@ -47,4 +53,5 @@ export const NotificationAPI = createApi({
   }),
 });
 
-export const { useGetNotificationAPIQuery, useUpdateNotificationMutation } = NotificationAPI;
+export const { useGetNotificationAPIQuery, useUpdateNotificationMutation } =
+  NotificationAPI;

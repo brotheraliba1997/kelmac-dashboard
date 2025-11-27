@@ -1,12 +1,9 @@
 "use client";
-import React from "react";
-
-import { store } from "./store";
-/* Core */
+import type { PropsWithChildren } from "react";
 import { Provider } from "react-redux";
 
-/* Instruments */
+import { store } from "./store";
 
-export const ReduxProvider = (props:any) => {
-  return <Provider store={store}>{props.children}</Provider>;
+export const ReduxProvider = ({ children }: PropsWithChildren) => {
+  return <Provider store={store}>{children}</Provider>;
 };

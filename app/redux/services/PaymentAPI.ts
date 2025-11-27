@@ -1,5 +1,12 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
+
 import { baseQueryWithAuth } from "./api";
+
+type PaymentsQueryArgs = {
+  page?: number;
+  limit?: number;
+  status?: string;
+};
 
 export const PaymentAPI = createApi({
   reducerPath: "PaymentAPI",
@@ -7,7 +14,7 @@ export const PaymentAPI = createApi({
   tagTypes: ["refetchCustPaymentMethods", "Payments"],
   endpoints: (builder) => ({
     attachPaymentMethod: builder.mutation({
-      query: (id) => ({
+      query: (id: string) => ({
         url: `/stripe/attachPaymentMethod/${id}`,
         method: "GET",
       }),
@@ -22,8 +29,8 @@ export const PaymentAPI = createApi({
       providesTags: ["refetchCustPaymentMethods"],
     }),
 
-    getPayments: builder.query({
-      query: ({ page = 1, limit = 20, status }) => {
+    getPayments: builder.query<unknown, PaymentsQueryArgs | void>({
+      query: ({ page = 1, limit = 20, status }: PaymentsQueryArgs = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),

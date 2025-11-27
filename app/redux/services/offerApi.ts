@@ -4,14 +4,14 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 export const offerApi = createApi({
   reducerPath: "offerApi",
   baseQuery: baseQueryWithAuth,
-  endpoints: (builder: any) => ({
-    getAllOffers: builder.query({
+  endpoints: (builder) => ({
+    getAllOffers: builder.query<unknown, void>({
       query: () => "/offers",
       providesTags: ["Offer"],
     }),
 
-    getOfferById: builder.query({
-      query: (id: any) => `/offers/${id}`,
+    getOfferById: builder.query<unknown, string>({
+      query: (id) => `/offers/${id}`,
       providesTags: ["Offer"],
     }),
   }),

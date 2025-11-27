@@ -41,7 +41,6 @@ export default function PurchaseOrdersTab() {
     useUpdatePurchaseOrderMutation();
 
   const handleOpenModal = (order: any, action: "approve" | "reject") => {
-    console.log("Opening modal for order:", order); // Debug log
     setSelectedOrder(order);
     setActionType(action);
     setDecisionNotes("");
@@ -78,8 +77,12 @@ export default function PurchaseOrdersTab() {
 
     try {
       // Get current user ID from localStorage or auth state
-      const userId =
-        localStorage.getItem("userId") || "675f4aaf2b67a23d4c9f2941";
+      const userId = localStorage.getItem("userId");
+
+      if (!userId) {
+        toast.error("Unable to identify reviewer. Please log in again.");
+        return;
+      }
 
       await updatePurchaseOrder({
         id: orderId,

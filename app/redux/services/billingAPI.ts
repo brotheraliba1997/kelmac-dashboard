@@ -1,27 +1,34 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
 
+type BillingTransactionsArgs = {
+  billingId: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "asc" | "desc" | string;
+};
+
 export const billingAPI = createApi({
   reducerPath: "billingAPI",
   baseQuery: baseQueryWithAuth,
   tagTypes: ["refetchTransactions"],
 
   endpoints: (builder) => ({
-    getBillings: builder.query({
+    getBillings: builder.query<unknown, void>({
       query: () => ({
         url: "/billings",
         method: "GET",
       }),
     }),
 
-    getBillingById: builder.query({
+    getBillingById: builder.query<unknown, string>({
       query: (id) => ({
         url: `/billings/${id}`,
         method: "GET",
       }),
     }),
 
-    getOwnBilling: builder.query({
+    getOwnBilling: builder.query<unknown, void>({
       query: () => ({
         url: "/billings/getOwnBilling",
         method: "GET",
@@ -29,7 +36,7 @@ export const billingAPI = createApi({
       providesTags: ["refetchTransactions"],
     }),
 
-    getStripPayment: builder.mutation({
+    getStripPayment: builder.mutation<unknown, void>({
       query: () => ({
         url: "/stripe/clearOwnDues",
         method: "GET",
@@ -37,7 +44,7 @@ export const billingAPI = createApi({
       invalidatesTags: ["refetchTransactions"],
     }),
 
-    getBillingTransactions: builder.query({
+    getBillingTransactions: builder.query<unknown, BillingTransactionsArgs>({
       query: ({ billingId, page = 1, pageSize = 10, sort = "asc" }) => ({
         url: `/billing/${billingId}/transactions`,
         method: "GET",

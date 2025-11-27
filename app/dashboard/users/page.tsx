@@ -3,17 +3,41 @@ import {
   GetUserRoleName,
   GetUserStatusName,
 } from "@/app/utils/getUserRoleName";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import DynamicTable, {
   Column,
   FilterConfig,
 } from "@/app/components/table/DynamicTableTailwind";
-import { useGetUsersQuery } from "@/app/redux/services/userApi";
+import {
+  useDeleteUserMutation,
+  useGetUsersQuery,
+} from "@/app/redux/services/userApi";
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+type UserRow = {
+  id?: string | number;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: { id?: number } | number;
+  status?: { id?: number } | number;
+};
+
+type UserFilterState = {
+  search: string;
+  isActive: string;
+  isDeleted: string;
+  company: string;
+  country: string;
+  role: string;
+  limit: number;
+  page: number;
+};
+
 export default function UsersPage() {
+  const router = useRouter();
   // Filter state for table
-  const [tableFilters, setTableFilters] = useState({
+  const [tableFilters, setTableFilters] = useState<UserFilterState>({
     search: "",
     isActive: "",
     isDeleted: "",
@@ -25,18 +49,35 @@ export default function UsersPage() {
   });
 
   const { data, error, isLoading } = useGetUsersQuery(tableFilters);
+  const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
 
-  // Always use the API response for users
-  const users = Array.isArray(data?.data) && data.data;
+  type UsersApiResponse = {
+    data?: UserRow[];
+    totalItems?: number;
+    currentPage?: number;
+    totalPages?: number;
+    limit?: number;
+  };
 
-  const columns = [
+  const apiResponse: UsersApiResponse | undefined = data as
+    | UsersApiResponse
+    | undefined;
+  const users: UserRow[] = apiResponse?.data ?? [];
+
+  const resolveRoleId = (role: UserRow["role"]): number | undefined =>
+    typeof role === "object" ? role?.id : role;
+
+  const resolveStatusId = (status: UserRow["status"]): number | undefined =>
+    typeof status === "object" ? status?.id : status;
+
+  const columns: Column<UserRow>[] = [
     {
-      key: "client",
+      key: "firstName",
       label: "Client",
-      render: (e: any) => (
+      render: (user) => (
         <div className="d-flex align-items-center gap-2">
           <div className="fw-semibold text-capitalize">
-            {e?.firstName} {e?.lastName}
+            {user?.firstName} {user?.lastName}
           </div>
         </div>
       ),
@@ -45,15 +86,15 @@ export default function UsersPage() {
     {
       key: "email",
       label: "Email",
-      render: (e: any) => <div className="text-lowercase">{e?.email}</div>,
+      render: (user) => <div className="text-lowercase">{user?.email}</div>,
       sortable: true,
     },
     {
       key: "role",
       label: "Role",
-      render: (e: any) => (
+      render: (user) => (
         <span className="badge bg-primary text-capitalize">
-          {GetUserRoleName(e?.role?.id || e?.role)}
+          {GetUserRoleName(resolveRoleId(user?.role))}
         </span>
       ),
       sortable: true,
@@ -61,8 +102,8 @@ export default function UsersPage() {
     {
       key: "status",
       label: "Status",
-      render: (e: any) => {
-        const statusName = GetUserStatusName(e?.status?.id || e?.status);
+      render: (user) => {
+        const statusName = GetUserStatusName(resolveStatusId(user?.status));
         return (
           <>
             {statusName === "Active" && (
@@ -90,36 +131,7 @@ export default function UsersPage() {
       },
       sortable: true,
     },
-    {
-      label: "Actions",
-      render: (e: any) => (
-        <div className="d-flex gap-3">
-          <FaEye
-            className="text-primary"
-            style={{ cursor: "pointer" }}
-            // onClick={() => handleView(e)}
-            title="View"
-          />
-
-          <Link href={`/dashboard/users/${e?.id}`}>
-            <FaEdit
-              className="text-success"
-              style={{ cursor: "pointer" }}
-              // onClick={() => handleEdit(e)}
-              title="Edit"
-            />
-          </Link>
-          <FaTrash
-            className="text-danger"
-            style={{ cursor: "pointer" }}
-            // onClick={() => handleDelete(e)}
-            title="Delete"
-          />
-        </div>
-      ),
-    },
   ];
-  console.log(isLoading, "data from users page==>", users);
   // Table filter configs
   const roleOptions = [
     { value: "1", label: "Admin" },
@@ -158,7 +170,7 @@ export default function UsersPage() {
     },
   ];
 
-  const handleUsersFilterChange = (filters: Record<string, any>) => {
+  const handleUsersFilterChange = (filters: Partial<UserFilterState>) => {
     const filterKeys = Object.keys(filters);
     const shouldResetPage = filterKeys.some(
       (key) => key !== "page" && key !== "limit"
@@ -178,6 +190,31 @@ export default function UsersPage() {
     setTableFilters((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   };
 
+  const handleAddUser = () => {
+    router.push("/dashboard/users/create");
+  };
+
+  const handleViewUser = (user: UserRow) => {
+    if (!user?.id) return;
+    router.push(`/dashboard/users/${user.id}`);
+  };
+
+  const handleEditUser = (user: UserRow) => {
+    if (!user?.id) return;
+    router.push(`/dashboard/users/${user.id}`);
+  };
+
+  const handleDeleteUser = async (user: UserRow) => {
+    if (!user?.id || isDeleting) return;
+    const confirmed = window.confirm("Are you sure you want to delete this user?");
+    if (!confirmed) return;
+    try {
+      await deleteUser(user.id).unwrap();
+    } catch (err) {
+      console.error("Failed to delete user", err);
+    }
+  };
+
   return (
     <div className="page-wrapper" style={{ minHeight: 730 }}>
       <div className="content container-fluid">
@@ -192,19 +229,35 @@ export default function UsersPage() {
           filters={usersFilters}
           onFilterChange={handleUsersFilterChange}
           pagination={
-            data
+            apiResponse && apiResponse.totalItems
               ? {
-                  total: data.totalItems,
-                  currentPage: data.currentPage,
-                  totalPages: data.totalPages,
-                  pageSize: data.limit,
+                  total: apiResponse.totalItems,
+                  currentPage: apiResponse.currentPage ?? tableFilters.page,
+                  totalPages: apiResponse.totalPages ?? 1,
+                  pageSize: apiResponse.limit ?? tableFilters.limit,
                   onPageChange: handlePageChange,
                   onPageSizeChange: handleLimitChange,
                   pageSizeOptions: [4, 10, 20, 50, 100],
                 }
-              : undefined
+              : {
+                  total: users.length,
+                  currentPage: tableFilters.page,
+                  totalPages: Math.max(
+                    1,
+                    Math.ceil(users.length / tableFilters.limit)
+                  ),
+                  pageSize: tableFilters.limit,
+                  onPageChange: handlePageChange,
+                  onPageSizeChange: handleLimitChange,
+                  pageSizeOptions: [4, 10, 20, 50, 100],
+                }
           }
           emptyMessage="No users found"
+          onAdd={handleAddUser}
+          addButtonLabel="Add User"
+          onView={handleViewUser}
+          onEdit={handleEditUser}
+          onDelete={isDeleting ? undefined : handleDeleteUser}
         />
       </div>
     </div>

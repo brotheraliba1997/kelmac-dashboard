@@ -6,6 +6,10 @@ import {
   FaFilter,
   FaChevronLeft,
   FaChevronRight,
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaPlus,
 } from "react-icons/fa";
 
 export interface Column<T> {
@@ -34,7 +38,7 @@ interface DynamicTableProps<T> {
   searchKeys?: string[];
   filters?: FilterConfig[];
   pageTitle?: string;
-  onFilterChange?: (filters: Record<string, any>) => void;
+  onFilterChange?: (filters: Record<string, unknown>) => void;
   pagination?: {
     total: number;
     currentPage: number;
@@ -48,9 +52,17 @@ interface DynamicTableProps<T> {
   emptyMessage?: string;
   className?: string;
   rowClassName?: (item: T, index: number) => string;
+  onAdd?: () => void;
+  addButtonLabel?: string;
+  onView?: (item: T) => void;
+  onEdit?: (item: T) => void;
+  onDelete?: (item: T) => void;
+  actionColumnLabel?: string;
 }
 
-export default function DynamicTableTailwind<T extends Record<string, any>>({
+export default function DynamicTableTailwind<
+  T extends Record<string, unknown>
+>({
   data,
   columns,
   pageTitle,
@@ -66,13 +78,20 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
   emptyMessage = "No data found",
   className = "",
   rowClassName,
+  onAdd,
+  addButtonLabel = "Add",
+  onView,
+  onEdit,
+  onDelete,
+  actionColumnLabel = "Actions",
 }: DynamicTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
-  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
+  const [filterValues, setFilterValues] =
+    useState<Record<string, unknown>>();
   const [showFilters, setShowFilters] = useState(false);
 
   // Handle sorting
@@ -85,8 +104,13 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
   };
 
   // Get nested value from object
-  const getNestedValue = (obj: any, path: string): any => {
-    return path.split(".").reduce((acc, part) => acc?.[part], obj);
+  const getNestedValue = (obj: unknown, path: string): unknown => {
+    return path.split(".").reduce<unknown>((acc, part) => {
+      if (acc && typeof acc === "object" && part in acc) {
+        return (acc as Record<string, unknown>)[part];
+      }
+      return undefined;
+    }, obj);
   };
 
   // Filter data based on search term
@@ -98,26 +122,35 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
       result = result.filter((item) =>
         searchKeys.some((key) => {
           const value = getNestedValue(item, key);
-          return value
-            ?.toString()
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
+          if (value === undefined || value === null) return false;
+          const normalizedValue = value.toString().toLowerCase();
+          return normalizedValue.includes(searchTerm.toLowerCase());
         })
       );
     }
 
     // Apply custom filters
-    Object.entries(filterValues).forEach(([key, value]) => {
-      if (value) {
+    Object.entries(filterValues || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== "" && value !== null) {
         result = result.filter((item) => {
           const itemValue = getNestedValue(item, key);
           if (Array.isArray(value)) {
             // For date range
             const [start, end] = value;
-            const itemDate = new Date(itemValue);
-            return itemDate >= new Date(start) && itemDate <= new Date(end);
+            const itemDate =
+              typeof itemValue === "string" || itemValue instanceof Date
+                ? new Date(itemValue)
+                : undefined;
+            if (!itemDate || Number.isNaN(itemDate.getTime())) return false;
+            return (
+              itemDate >= new Date(start as string) &&
+              itemDate <= new Date(end as string)
+            );
           }
-          return itemValue?.toString().toLowerCase() === value.toLowerCase();
+          if (itemValue === undefined || itemValue === null) return false;
+          const itemValueString = itemValue.toString().toLowerCase();
+          const filterValueString = value.toString().toLowerCase();
+          return itemValueString === filterValueString;
         });
       }
     });
@@ -127,11 +160,15 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
       result.sort((a, b) => {
         const aValue = getNestedValue(a, sortConfig.key);
         const bValue = getNestedValue(b, sortConfig.key);
+        const aComparable =
+          typeof aValue === "number" ? aValue : (aValue ?? "").toString();
+        const bComparable =
+          typeof bValue === "number" ? bValue : (bValue ?? "").toString();
 
-        if (aValue < bValue) {
+        if (aComparable < bComparable) {
           return sortConfig.direction === "asc" ? -1 : 1;
         }
-        if (aValue > bValue) {
+        if (aComparable > bComparable) {
           return sortConfig.direction === "asc" ? 1 : -1;
         }
         return 0;
@@ -142,9 +179,9 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
   }, [data, searchTerm, searchKeys, filterValues, sortConfig]);
 
   // Handle filter change
-  const handleFilterChange = (key: string, value: any) => {
-    const newFilters = {
-      ...filterValues,
+  const handleFilterChange = (key: string, value: unknown) => {
+    const newFilters: Record<string, unknown> = {
+      ...(filterValues || {}),
       [key]: value,
     };
     setFilterValues(newFilters);
@@ -157,7 +194,7 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
 
   // Clear all filters
   const clearFilters = () => {
-    setFilterValues({});
+    setFilterValues(undefined);
     setSearchTerm("");
   };
 
@@ -168,7 +205,7 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
         return (
           <select
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={filterValues[filter.key] || ""}
+            value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           >
             <option value="">All</option>
@@ -185,7 +222,7 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
           <input
             type="date"
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={filterValues[filter.key] || ""}
+            value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           />
         );
@@ -196,7 +233,7 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
             type="text"
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder={filter.placeholder || `Filter by ${filter.label}`}
-            value={filterValues[filter.key] || ""}
+            value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           />
         );
@@ -207,8 +244,8 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
   };
 
   // Calculate active filters count
-  const activeFiltersCount = Object.values(filterValues).filter(
-    (v) => v && v !== ""
+  const activeFiltersCount = Object.values(filterValues || {}).filter(
+    (v) => v !== undefined && v !== ""
   ).length;
 
   if (error) {
@@ -225,11 +262,23 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
 
   return (
     <div className={`w-full ${className}`}>
-      {pageTitle && (
-        <div className="page-header mb-4">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-            {pageTitle}
-          </h1>
+      {(pageTitle || onAdd) && (
+        <div className="page-header mb-4 flex flex-wrap items-center justify-between gap-3">
+          {pageTitle && (
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+              {pageTitle}
+            </h1>
+          )}
+          {onAdd && (
+            <button
+              type="button"
+              onClick={onAdd}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors"
+            >
+              <FaPlus />
+              {addButtonLabel}
+            </button>
+          )}
         </div>
       )}
 
@@ -401,6 +450,11 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
                   </div>
                 </th>
               ))}
+              {(onView || onEdit || onDelete) && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {actionColumnLabel}
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -422,18 +476,76 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
                     onRowClick ? "cursor-pointer hover:bg-gray-50" : ""
                   } transition-colors ${rowClassName?.(item, index) || ""}`}
                 >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
-                        column.className || ""
-                      }`}
-                    >
-                      {column.render
-                        ? column.render(item, index)
-                        : getNestedValue(item, column.key)}
+                  {columns.map((column) => {
+                    let displayValue: React.ReactNode;
+                    if (column.render) {
+                      displayValue = column.render(item, index);
+                    } else {
+                      const rawValue = getNestedValue(item, column.key);
+                      displayValue =
+                        rawValue === undefined || rawValue === null
+                          ? "—"
+                          : typeof rawValue === "string" ||
+                            typeof rawValue === "number"
+                          ? rawValue
+                          : String(rawValue);
+                    }
+                    return (
+                      <td
+                        key={column.key}
+                        className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                          column.className || ""
+                        }`}
+                      >
+                        {displayValue}
+                      </td>
+                    );
+                  })}
+                  {(onView || onEdit || onDelete) && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex items-center gap-3">
+                        {onView && (
+                          <button
+                            type="button"
+                            className="text-blue-600 hover:text-blue-800"
+                            title="View"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onView(item);
+                            }}
+                          >
+                            <FaEye />
+                          </button>
+                        )}
+                        {onEdit && (
+                          <button
+                            type="button"
+                            className="text-green-600 hover:text-green-800"
+                            title="Edit"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onEdit(item);
+                            }}
+                          >
+                            <FaEdit />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            type="button"
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onDelete(item);
+                            }}
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </td>
-                  ))}
+                  )}
                 </tr>
               ))
             ) : (
@@ -517,7 +629,10 @@ export default function DynamicTableTailwind<T extends Record<string, any>>({
                 1,
                 pagination.currentPage - Math.floor(maxVisible / 2)
               );
-              let end = Math.min(pagination.totalPages, start + maxVisible - 1);
+              const end = Math.min(
+                pagination.totalPages,
+                start + maxVisible - 1
+              );
 
               if (end - start + 1 < maxVisible) {
                 start = Math.max(1, end - maxVisible + 1);

@@ -6,7 +6,7 @@ export const languageAPI = createApi({
   baseQuery: baseQueryWithAuth, // Set default base query to the one with auth headers
   endpoints: (builder) => ({
     // Client Queries
-    getlanguage: builder.query({
+    getlanguage: builder.query<unknown, void>({
       query: () => ({
         url: "/languages/all",
         method: "GET",
