@@ -125,7 +125,6 @@ export default function CoursesPage() {
     //     ),
     //   sortable: true,
     // },
-
   ];
 
   const coursesFilters: FilterConfig[] = [
@@ -215,9 +214,12 @@ export default function CoursesPage() {
   const handleAddCourse = () => router.push("/dashboard/courses/create");
   const handleViewCourse = (course: CourseRow) => {
     if (!course?.id) return;
-    router.push(`/dashboard/courses/${course.id}`);
+    // router.push(`/dashboard/courses/${course.id}`);
   };
-  const handleEditCourse = handleViewCourse;
+  const handleEditCourse = (course: CourseRow) => {
+    if (!course?.id) return;
+    router.push(`/dashboard/courses/edit/${course.id}`);
+  };
   const handleDeleteCourse = async (course: CourseRow) => {
     if (!course?.id || isDeleting) return;
     const confirmed = window.confirm("Delete this course?");

@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import DynamicForm, { DynamicFormConfig } from "../shared/DynamicForm";
@@ -20,14 +14,13 @@ import {
   FaVideo,
   FaImage,
   FaGlobe,
-  FaUsers,
-  FaStar,
-  FaList,
   FaQuestionCircle,
   FaPlus,
-  FaMinus,
   FaEdit,
   FaTrash,
+  FaChevronLeft,
+  FaChevronRight,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { useGetUsersQuery } from "../../redux/services/userApi";
 import {
@@ -37,7 +30,7 @@ import {
 } from "../../redux/services/courseApi";
 import { useGetCategoriesQuery } from "../../redux/services/categoryApi";
 
-// ===== TYPES & INTERFACES =====
+// ===== TYPES =====
 export interface Course {
   id?: string;
   title: string;
@@ -67,7 +60,6 @@ export interface Course {
   features: string[];
   faqs: FAQ[];
   sessions: Session[];
-  timeTable?: ClassDateOption[];
   isPublished: boolean;
   isFeatured: boolean;
   isBestseller: boolean;
@@ -80,31 +72,29 @@ export interface FAQ {
 }
 
 export interface Session {
+  id?: string;
   title: string;
   description: string;
-  duration: number;
-  sessionType: SessionTypeEnum;
-  dayGroup?: string;
-  startTime?: string;
-  endTime?: string;
-  isFree: boolean;
-  materials: string[];
-  objectives: string[];
-  prerequisites: string[];
+  seatsLeft: number;
+  type: SessionTypeEnum;
+  timeBlocks: TimeBlock[];
+  order: number;
 }
 
-export interface ClassDateOption {
-  date: Date;
-  description?: string; // e.g. "Full Week", "Weekend Per day"
-  time?: string; // e.g. "9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
+export interface TimeBlock {
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  timeZone: string;
 }
 
 export enum SessionTypeEnum {
-  LECTURE = "lecture",
-  INTRODUCTION = "introduction",
-  BREAK = "break",
-  LUNCH = "lunch",
-  END_OF_DAY = "end_of_day",
+  FULL_WEEK = "Full Week",
+  SPLIT_WEEK = "Split Week",
+  WEEKEND = "Weekend",
+  EVENING = "Evening",
+  WEEKEND_PER_DAY = "Weekend Per Day", // Keeping for backward compatibility
 }
 
 export enum SkillLevelEnum {
@@ -126,216 +116,7 @@ interface DynamicCourseFormProps {
   courseId?: string;
 }
 
-// ===== STATE MANAGEMENT =====
-interface FormState {
-  currentStep: number;
-  accumulatedFormData: Record<string, any>;
-  sessions: Session[];
-  faqs: FAQ[];
-  timeTable: ClassDateOption[];
-  showSessionForm: boolean;
-  showFaqForm: boolean;
-  showTimeTableForm: boolean;
-  editingSessionIndex: number | null;
-  editingFaqIndex: number | null;
-  editingTimeTableIndex: number | null;
-}
-
-type FormAction =
-  | { type: "SET_STEP"; payload: number }
-  | { type: "ACCUMULATE_DATA"; payload: Record<string, any> }
-  | { type: "SET_SESSIONS"; payload: Session[] }
-  | { type: "ADD_SESSION"; payload: Session }
-  | { type: "UPDATE_SESSION"; payload: { index: number; session: Session } }
-  | { type: "DELETE_SESSION"; payload: number }
-  | { type: "SET_FAQS"; payload: FAQ[] }
-  | { type: "ADD_FAQ"; payload: FAQ }
-  | { type: "UPDATE_FAQ"; payload: { index: number; faq: FAQ } }
-  | { type: "DELETE_FAQ"; payload: number }
-  | { type: "SET_TIMETABLE"; payload: ClassDateOption[] }
-  | { type: "ADD_TIMETABLE"; payload: ClassDateOption }
-  | {
-      type: "UPDATE_TIMETABLE";
-      payload: { index: number; timeTable: ClassDateOption };
-    }
-  | { type: "DELETE_TIMETABLE"; payload: number }
-  | { type: "TOGGLE_SESSION_FORM"; payload?: boolean }
-  | { type: "TOGGLE_FAQ_FORM"; payload?: boolean }
-  | { type: "TOGGLE_TIMETABLE_FORM"; payload?: boolean }
-  | { type: "SET_EDITING_SESSION"; payload: number | null }
-  | { type: "SET_EDITING_FAQ"; payload: number | null }
-  | { type: "SET_EDITING_TIMETABLE"; payload: number | null }
-  | { type: "RESET_FORM" };
-
-const initialFormState: FormState = {
-  currentStep: 1,
-  accumulatedFormData: {},
-  sessions: [],
-  faqs: [],
-  timeTable: [],
-  showSessionForm: false,
-  showFaqForm: false,
-  showTimeTableForm: false,
-  editingSessionIndex: null,
-  editingFaqIndex: null,
-  editingTimeTableIndex: null,
-};
-
-function formReducer(state: FormState, action: FormAction): FormState {
-  switch (action.type) {
-    case "SET_STEP":
-      return { ...state, currentStep: action.payload };
-
-    case "ACCUMULATE_DATA":
-      return {
-        ...state,
-        accumulatedFormData: {
-          ...state.accumulatedFormData,
-          ...action.payload,
-        },
-      };
-
-    case "SET_SESSIONS":
-      return { ...state, sessions: action.payload };
-
-    case "ADD_SESSION":
-      return {
-        ...state,
-        sessions: [
-          ...state.sessions,
-          //   { ...action.payload, order: state.sessions.length },
-        ],
-        showSessionForm: false,
-        editingSessionIndex: null,
-      };
-
-    case "UPDATE_SESSION":
-      const updatedSessions = [...state.sessions];
-      updatedSessions[action.payload.index] = {
-        ...action.payload.session,
-        // order: action.payload.index,
-      };
-      return {
-        ...state,
-        sessions: updatedSessions,
-        showSessionForm: false,
-        editingSessionIndex: null,
-      };
-
-    case "DELETE_SESSION":
-      return {
-        ...state,
-        sessions: state.sessions.filter((_, i) => i !== action.payload),
-      };
-
-    case "SET_FAQS":
-      return { ...state, faqs: action.payload };
-
-    case "ADD_FAQ":
-      return {
-        ...state,
-        faqs: [...state.faqs, action.payload],
-        showFaqForm: false,
-        editingFaqIndex: null,
-      };
-
-    case "UPDATE_FAQ":
-      const updatedFaqs = [...state.faqs];
-      updatedFaqs[action.payload.index] = action.payload.faq;
-      return {
-        ...state,
-        faqs: updatedFaqs,
-        showFaqForm: false,
-        editingFaqIndex: null,
-      };
-
-    case "DELETE_FAQ":
-      return {
-        ...state,
-        faqs: state.faqs.filter((_, i) => i !== action.payload),
-      };
-
-    case "TOGGLE_SESSION_FORM":
-      return {
-        ...state,
-        showSessionForm: action.payload ?? !state.showSessionForm,
-        editingSessionIndex:
-          action.payload === false ? null : state.editingSessionIndex,
-      };
-
-    case "TOGGLE_FAQ_FORM":
-      return {
-        ...state,
-        showFaqForm: action.payload ?? !state.showFaqForm,
-        editingFaqIndex:
-          action.payload === false ? null : state.editingFaqIndex,
-      };
-
-    case "SET_EDITING_SESSION":
-      return {
-        ...state,
-        editingSessionIndex: action.payload,
-        showSessionForm: action.payload !== null,
-      };
-
-    case "SET_EDITING_FAQ":
-      return {
-        ...state,
-        editingFaqIndex: action.payload,
-        showFaqForm: action.payload !== null,
-      };
-
-    case "SET_TIMETABLE":
-      return { ...state, timeTable: action.payload };
-
-    case "ADD_TIMETABLE":
-      return {
-        ...state,
-        timeTable: [...state.timeTable, action.payload],
-        showTimeTableForm: false,
-        editingTimeTableIndex: null,
-      };
-
-    case "UPDATE_TIMETABLE":
-      const updatedTimeTable = [...state.timeTable];
-      updatedTimeTable[action.payload.index] = action.payload.timeTable;
-      return {
-        ...state,
-        timeTable: updatedTimeTable,
-        showTimeTableForm: false,
-        editingTimeTableIndex: null,
-      };
-
-    case "DELETE_TIMETABLE":
-      return {
-        ...state,
-        timeTable: state.timeTable.filter((_, i) => i !== action.payload),
-      };
-
-    case "TOGGLE_TIMETABLE_FORM":
-      return {
-        ...state,
-        showTimeTableForm: action.payload ?? !state.showTimeTableForm,
-        editingTimeTableIndex:
-          action.payload === false ? null : state.editingTimeTableIndex,
-      };
-
-    case "SET_EDITING_TIMETABLE":
-      return {
-        ...state,
-        editingTimeTableIndex: action.payload,
-        showTimeTableForm: action.payload !== null,
-      };
-
-    case "RESET_FORM":
-      return initialFormState;
-
-    default:
-      return state;
-  }
-}
-
-// ===== UTILITY FUNCTIONS =====
+// ===== VALIDATION UTILITIES =====
 const isValidObjectId = (id: string): boolean => {
   return /^[0-9a-fA-F]{24}$/.test(id);
 };
@@ -351,6 +132,55 @@ const processArrayField = (data: string | string[]): string[] => {
   return [];
 };
 
+const validatePrice = (price: any): string | null => {
+  if (price === undefined || price === null || price === "") {
+    return "Price is required";
+  }
+  const numPrice = Number(price);
+  if (isNaN(numPrice)) {
+    return "Price must be a valid number";
+  }
+  if (numPrice < 0) {
+    return "Price must not be less than 0";
+  }
+  return null;
+};
+
+const validateDiscountedPrice = (
+  discountedPrice: any,
+  price: number
+): string | null => {
+  if (!discountedPrice) return null; // Optional field
+
+  const numDiscountedPrice = Number(discountedPrice);
+  if (isNaN(numDiscountedPrice)) {
+    return "Discounted price must be a valid number";
+  }
+  if (numDiscountedPrice < 0) {
+    return "Discounted price must not be less than 0";
+  }
+  if (numDiscountedPrice > price) {
+    return "Discounted price must not be greater than regular price";
+  }
+  return null;
+};
+
+const validateDiscountPercentage = (discountPercentage: any): string | null => {
+  if (!discountPercentage) return null; // Optional field
+
+  const numDiscountPercentage = Number(discountPercentage);
+  if (isNaN(numDiscountPercentage)) {
+    return "Discount percentage must be a valid number";
+  }
+  if (numDiscountPercentage < 0) {
+    return "Discount percentage must not be less than 0";
+  }
+  if (numDiscountPercentage > 100) {
+    return "Discount percentage must not be greater than 100";
+  }
+  return null;
+};
+
 const validateFormData = (
   data: Record<string, any>,
   faqs: FAQ[],
@@ -358,16 +188,45 @@ const validateFormData = (
 ): string[] => {
   const errors: string[] = [];
 
+  // Required fields validation
   if (!data.title?.trim()) errors.push("Course title is required");
   if (!data.description?.trim()) errors.push("Course description is required");
   if (!data.instructor?.trim() || !isValidObjectId(data.instructor)) {
     errors.push("Valid instructor must be selected");
   }
-  if (!data.category?.trim() || !isValidObjectId(data.category)) {
+  if (!data.category || !isValidObjectId(data.category)) {
     errors.push("Valid category must be selected");
   }
   if (!data.whatYouWillLearn?.trim()) {
     errors.push("Learning objectives are required");
+  }
+
+  // Price validation
+  const priceError = validatePrice(data.price);
+  if (priceError) errors.push(priceError);
+
+  // Discounted price validation
+  const discountedPriceError = validateDiscountedPrice(
+    data.discountedPrice,
+    Number(data.price)
+  );
+  if (discountedPriceError) errors.push(discountedPriceError);
+
+  // Discount percentage validation
+  const discountPercentageError = validateDiscountPercentage(
+    data.discountPercentage
+  );
+  if (discountPercentageError) errors.push(discountPercentageError);
+
+  // Array fields validation
+  if (
+    data.subcategories &&
+    !Array.isArray(processArrayField(data.subcategories))
+  ) {
+    errors.push("Subcategories must be an array");
+  }
+  if (data.topics && !Array.isArray(processArrayField(data.topics))) {
+    errors.push("Topics must be an array");
   }
 
   // FAQ validation
@@ -381,25 +240,28 @@ const validateFormData = (
   }
 
   // Sessions validation
-  const validSessions = sessions.filter(
-    (session) => session.title?.trim() && session.description?.trim()
-  );
-  if (sessions.length > 0 && validSessions.length === 0) {
-    errors.push(
-      "If adding sessions, at least one complete session (title and description) is required"
-    );
-  }
+  sessions.forEach((session, index) => {
+    if (
+      !Object.values(SessionTypeEnum).includes(session.type as SessionTypeEnum)
+    ) {
+      errors.push(
+        `Session ${index + 1}: Type must be one of: ${Object.values(
+          SessionTypeEnum
+        ).join(", ")}`
+      );
+    }
+  });
 
   return errors;
 };
 
-// FAQ Form Component
+// ===== FORM COMPONENTS =====
 const FaqForm: React.FC<{
-  initialData?: { question: string; answer: string };
-  onSave: (data: { question: string; answer: string }) => void;
+  initialData?: FAQ;
+  onSave: (data: FAQ) => void;
   onCancel: () => void;
 }> = ({ initialData, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FAQ>({
     question: initialData?.question || "",
     answer: initialData?.answer || "",
   });
@@ -411,7 +273,6 @@ const FaqForm: React.FC<{
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -419,35 +280,31 @@ const FaqForm: React.FC<{
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.question.trim()) {
-      newErrors.question = "Question is required";
-    }
-
-    if (!formData.answer.trim()) {
-      newErrors.answer = "Answer is required";
-    }
-
+    if (!formData.question.trim()) newErrors.question = "Question is required";
+    if (!formData.answer.trim()) newErrors.answer = "Answer is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
-    }
+    if (validateForm()) onSave(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="question" className="form-label">
-          Question <span className="text-danger">*</span>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label
+          htmlFor="question"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Question <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          className={`form-control ${errors.question ? "is-invalid" : ""}`}
+          className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            errors.question ? "border-red-500" : "border-gray-300"
+          }`}
           id="question"
           name="question"
           value={formData.question}
@@ -455,16 +312,21 @@ const FaqForm: React.FC<{
           placeholder="Enter the question"
         />
         {errors.question && (
-          <div className="invalid-feedback">{errors.question}</div>
+          <p className="mt-1 text-sm text-red-600">{errors.question}</p>
         )}
       </div>
 
-      <div className="mb-3">
-        <label htmlFor="answer" className="form-label">
-          Answer <span className="text-danger">*</span>
+      <div>
+        <label
+          htmlFor="answer"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Answer <span className="text-red-500">*</span>
         </label>
         <textarea
-          className={`form-control ${errors.answer ? "is-invalid" : ""}`}
+          className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            errors.answer ? "border-red-500" : "border-gray-300"
+          }`}
           id="answer"
           name="answer"
           rows={4}
@@ -473,19 +335,22 @@ const FaqForm: React.FC<{
           placeholder="Enter the answer"
         />
         {errors.answer && (
-          <div className="invalid-feedback">{errors.answer}</div>
+          <p className="mt-1 text-sm text-red-600">{errors.answer}</p>
         )}
       </div>
 
-      <div className="d-flex justify-content-end gap-2">
+      <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={onCancel}
         >
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
           {initialData ? "Update FAQ" : "Add FAQ"}
         </button>
       </div>
@@ -493,27 +358,168 @@ const FaqForm: React.FC<{
   );
 };
 
-// Session Form Component
-const SessionForm: React.FC<{
-  initialData?: any;
-  onSave: (data: any) => void;
+const TimeBlockForm: React.FC<{
+  initialData?: TimeBlock;
+  onSave: (data: TimeBlock) => void;
   onCancel: () => void;
 }> = ({ initialData, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TimeBlock>({
+    startDate: initialData?.startDate || "",
+    endDate: initialData?.endDate || "",
+    startTime: initialData?.startTime || "09:00",
+    endTime: initialData?.endTime || "16:00",
+    timeZone: initialData?.timeZone || "Eastern Time (GMT-5)",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="startDate"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Start Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="startDate"
+            name="startDate"
+            value={formData.startDate}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="endDate"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            End Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="endDate"
+            name="endDate"
+            value={formData.endDate}
+            onChange={handleChange}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="startTime"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Start Time <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="startTime"
+            name="startTime"
+            value={formData.startTime}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="endTime"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            End Time <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            id="endTime"
+            name="endTime"
+            value={formData.endTime}
+            onChange={handleChange}
+            required
+          />
+        </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="timeZone"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Time Zone <span className="text-red-500">*</span>
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          id="timeZone"
+          name="timeZone"
+          value={formData.timeZone}
+          onChange={handleChange}
+          required
+        >
+          <option value="Eastern Time (GMT-5)">Eastern Time (GMT-5)</option>
+          <option value="Central Time (GMT-6)">Central Time (GMT-6)</option>
+          <option value="Pacific Time (GMT-8)">Pacific Time (GMT-8)</option>
+          <option value="GMT">GMT</option>
+          <option value="UTC">UTC</option>
+        </select>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4">
+        <button
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          {initialData ? "Update Time Block" : "Add Time Block"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const SessionForm: React.FC<{
+  initialData?: Session;
+  onSave: (data: Session) => void;
+  onCancel: () => void;
+}> = ({ initialData, onSave, onCancel }) => {
+  const [formData, setFormData] = useState<Session>({
     title: initialData?.title || "",
     description: initialData?.description || "",
-    duration: initialData?.duration || 60,
-    sessionType: initialData?.sessionType || SessionTypeEnum.LECTURE,
-    dayGroup: initialData?.dayGroup || "",
-    startTime: initialData?.startTime || "",
-    endTime: initialData?.endTime || "",
-    isFree: initialData?.isFree || false,
-    materials: initialData?.materials || [],
-    objectives: initialData?.objectives || [],
-    prerequisites: initialData?.prerequisites || [],
+    seatsLeft: initialData?.seatsLeft || 0,
+    type: initialData?.type || SessionTypeEnum.FULL_WEEK,
+    timeBlocks: initialData?.timeBlocks || [],
+    order: initialData?.order || 0,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showTimeBlockForm, setShowTimeBlockForm] = useState(false);
+  const [editingTimeBlockIndex, setEditingTimeBlockIndex] = useState<
+    number | null
+  >(null);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -521,19 +527,13 @@ const SessionForm: React.FC<{
     >
   ) => {
     const { name, value, type } = e.target;
-    const finalValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-
+    const finalValue = type === "number" ? Number(value) : value;
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-  };
-
-  const handleArrayChange = (field: string, value: string) => {
-    const items = value.split("\n").filter((item) => item.trim());
-    setFormData((prev) => ({ ...prev, [field]: items }));
   };
 
   const validateForm = () => {
@@ -542,388 +542,406 @@ const SessionForm: React.FC<{
     if (!formData.title.trim()) {
       newErrors.title = "Session title is required";
     }
-
-    const duration = Number(formData.duration);
-    if (!duration || duration <= 0 || !Number.isInteger(duration)) {
-      newErrors.duration = "Duration must be a positive integer greater than 0";
+    if (!formData.description.trim()) {
+      newErrors.description = "Session description is required";
+    }
+    if (formData.seatsLeft < 0) {
+      newErrors.seatsLeft = "Seats available must not be less than 0";
+    }
+    if (
+      !Object.values(SessionTypeEnum).includes(formData.type as SessionTypeEnum)
+    ) {
+      newErrors.type = `Type must be one of: ${Object.values(
+        SessionTypeEnum
+      ).join(", ")}`;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleTimeBlockSave = (timeBlock: TimeBlock) => {
+    if (editingTimeBlockIndex !== null) {
+      const updatedTimeBlocks = [...formData.timeBlocks];
+      updatedTimeBlocks[editingTimeBlockIndex] = timeBlock;
+      setFormData((prev) => ({ ...prev, timeBlocks: updatedTimeBlocks }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        timeBlocks: [...prev.timeBlocks, timeBlock],
+      }));
+    }
+    setShowTimeBlockForm(false);
+    setEditingTimeBlockIndex(null);
+  };
+
+  const handleTimeBlockEdit = (index: number) => {
+    setEditingTimeBlockIndex(index);
+    setShowTimeBlockForm(true);
+  };
+
+  const handleTimeBlockDelete = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      timeBlocks: prev.timeBlocks.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
+    if (!validateForm()) return;
+
+    if (formData.timeBlocks.length === 0) {
+      toast.error("At least one time block is required");
+      return;
     }
+    onSave(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="row">
-        <div className="col-md-8">
-          <div className="mb-3">
-            <label htmlFor="title" className="form-label">
-              Session Title <span className="text-danger">*</span>
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Session Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              className={`form-control ${errors.title ? "is-invalid" : ""}`}
+              className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.title ? "border-red-500" : "border-gray-300"
+              }`}
               id="title"
               name="title"
               value={formData.title}
               onChange={handleChange}
-              placeholder="Enter session title"
+              required
             />
             {errors.title && (
-              <div className="invalid-feedback">{errors.title}</div>
+              <p className="mt-1 text-sm text-red-600">{errors.title}</p>
             )}
           </div>
-        </div>
-        <div className="col-md-4">
-          <div className="mb-3">
-            <label htmlFor="sessionType" className="form-label">
-              Session Type
-            </label>
-            <select
-              className="form-control"
-              id="sessionType"
-              name="sessionType"
-              value={formData.sessionType}
-              onChange={handleChange}
+          <div>
+            <label
+              htmlFor="seatsLeft"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              <option value={SessionTypeEnum.LECTURE}>Lecture</option>
-              <option value={SessionTypeEnum.INTRODUCTION}>Introduction</option>
-              <option value={SessionTypeEnum.BREAK}>Break</option>
-              <option value={SessionTypeEnum.LUNCH}>Lunch</option>
-              <option value={SessionTypeEnum.END_OF_DAY}>End of Day</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="description" className="form-label">
-          Description
-        </label>
-        <textarea
-          className="form-control"
-          id="description"
-          name="description"
-          rows={3}
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Enter session description"
-        />
-      </div>
-
-      <div className="row">
-        <div className="col-md-4">
-          <div className="mb-3">
-            <label htmlFor="duration" className="form-label">
-              Duration (minutes) <span className="text-danger">*</span>
+              Seats Available <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
-              className={`form-control ${errors.duration ? "is-invalid" : ""}`}
-              id="duration"
-              name="duration"
-              value={formData.duration}
+              className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.seatsLeft ? "border-red-500" : "border-gray-300"
+              }`}
+              id="seatsLeft"
+              name="seatsLeft"
+              value={formData.seatsLeft}
               onChange={handleChange}
-              min="1"
-              placeholder="90"
+              min="0"
+              required
             />
-            {errors.duration && (
-              <div className="invalid-feedback">{errors.duration}</div>
+            {errors.seatsLeft && (
+              <p className="mt-1 text-sm text-red-600">{errors.seatsLeft}</p>
             )}
           </div>
         </div>
-        <div className="col-md-4">
-          <div className="mb-3">
-            <label htmlFor="startTime" className="form-label">
-              Start Time
-            </label>
-            <input
-              type="time"
-              className="form-control"
-              id="startTime"
-              name="startTime"
-              value={formData.startTime}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="mb-3">
-            <label htmlFor="endTime" className="form-label">
-              End Time
-            </label>
-            <input
-              type="time"
-              className="form-control"
-              id="endTime"
-              name="endTime"
-              value={formData.endTime}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-      </div>
 
-      <div className="row">
-        <div className="col-md-8">
-          <div className="mb-3">
-            <label htmlFor="dayGroup" className="form-label">
-              Day Group
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="dayGroup"
-              name="dayGroup"
-              value={formData.dayGroup}
-              onChange={handleChange}
-              placeholder="e.g., Monday/Wednesday, Weekend, etc."
-            />
-          </div>
+        <div>
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors.description ? "border-red-500" : "border-gray-300"
+            }`}
+            id="description"
+            name="description"
+            rows={3}
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          )}
         </div>
-        <div className="col-md-4">
-          <div className="mb-3 pt-4">
-            <div className="form-check">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="isFree"
-                name="isFree"
-                checked={formData.isFree}
-                onChange={handleChange}
+
+        <div>
+          <label
+            htmlFor="type"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Session Type <span className="text-red-500">*</span>
+          </label>
+          <select
+            className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors.type ? "border-red-500" : "border-gray-300"
+            }`}
+            id="type"
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+          >
+            {Object.values(SessionTypeEnum).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+          {errors.type && (
+            <p className="mt-1 text-sm text-red-600">{errors.type}</p>
+          )}
+        </div>
+
+        {/* Time Blocks Management */}
+        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">
+                Time Blocks
+              </h4>
+              <p className="text-sm text-gray-600">
+                Schedule when this session will occur
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              onClick={() => setShowTimeBlockForm(true)}
+            >
+              <FaPlus className="w-4 h-4 mr-1" />
+              Add Time Block
+            </button>
+          </div>
+
+          {formData.timeBlocks.length === 0 ? (
+            <div className="text-center py-8">
+              <FaClock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">No time blocks added yet</p>
+              <p className="text-gray-400 text-xs mt-1">
+                Add at least one time block to schedule this session
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {formData.timeBlocks.map((timeBlock, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Block {index + 1}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="font-medium text-gray-700">
+                            Date:
+                          </span>{" "}
+                          <span className="text-gray-600">
+                            {timeBlock.startDate} to {timeBlock.endDate}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-700">
+                            Time:
+                          </span>{" "}
+                          <span className="text-gray-600">
+                            {timeBlock.startTime} - {timeBlock.endTime}
+                          </span>
+                        </div>
+                        <div className="md:col-span-2">
+                          <span className="font-medium text-gray-700">
+                            Timezone:
+                          </span>{" "}
+                          <span className="text-gray-600">
+                            {timeBlock.timeZone}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-1 ml-4">
+                      <button
+                        type="button"
+                        className="inline-flex items-center p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={() => handleTimeBlockEdit(index)}
+                      >
+                        <FaEdit className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex items-center p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                        onClick={() => handleTimeBlockDelete(index)}
+                      >
+                        <FaTrash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {initialData ? "Update Session" : "Add Session"}
+          </button>
+        </div>
+      </form>
+
+      {/* Time Block Form Modal */}
+      {showTimeBlockForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {editingTimeBlockIndex !== null
+                  ? "Edit Time Block"
+                  : "Add Time Block"}
+              </h3>
+            </div>
+            <div className="p-6">
+              <TimeBlockForm
+                initialData={
+                  editingTimeBlockIndex !== null
+                    ? formData.timeBlocks[editingTimeBlockIndex]
+                    : undefined
+                }
+                onSave={handleTimeBlockSave}
+                onCancel={() => {
+                  setShowTimeBlockForm(false);
+                  setEditingTimeBlockIndex(null);
+                }}
               />
-              <label className="form-check-label" htmlFor="isFree">
-                Free Session
-              </label>
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="objectives" className="form-label">
-          Learning Objectives
-          <small className="text-muted">(one per line)</small>
-        </label>
-        <textarea
-          className="form-control"
-          id="objectives"
-          rows={3}
-          value={formData.objectives.join("\n")}
-          onChange={(e) => handleArrayChange("objectives", e.target.value)}
-          placeholder="Understand basic concepts&#10;Apply theoretical knowledge&#10;Develop practical skills"
-        />
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="materials" className="form-label">
-          Required Materials
-          <small className="text-muted">(one per line)</small>
-        </label>
-        <textarea
-          className="form-control"
-          id="materials"
-          rows={2}
-          value={formData.materials.join("\n")}
-          onChange={(e) => handleArrayChange("materials", e.target.value)}
-          placeholder="Laptop with IDE&#10;Textbook Chapter 3&#10;Online resources"
-        />
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="prerequisites" className="form-label">
-          Prerequisites
-          <small className="text-muted">(one per line)</small>
-        </label>
-        <textarea
-          className="form-control"
-          id="prerequisites"
-          rows={2}
-          value={formData.prerequisites.join("\n")}
-          onChange={(e) => handleArrayChange("prerequisites", e.target.value)}
-          placeholder="Complete previous session&#10;Basic programming knowledge"
-        />
-      </div>
-
-      <div className="d-flex justify-content-end gap-2 mt-3">
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button type="submit" className="btn btn-primary">
-          {initialData ? "Update Session" : "Add Session"}
-        </button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 };
 
-// TimeTable Form Component
-const TimeTableForm: React.FC<{
-  initialData?: ClassDateOption;
-  onSave: (data: ClassDateOption) => void;
-  onCancel: () => void;
-}> = ({ initialData, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<ClassDateOption>({
-    date: initialData?.date || new Date(),
-    description: initialData?.description || "",
-    time: initialData?.time || "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-
-    if (name === "date") {
-      setFormData((prev) => ({ ...prev, [name]: new Date(value) }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.date) {
-      newErrors.date = "Date is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onSave(formData);
-    }
-  };
-
-  // Format date for input (YYYY-MM-DDTHH:mm)
-  const formatDateForInput = (date: Date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
+// ===== STEP PROGRESS COMPONENT =====
+const StepProgress: React.FC<{
+  currentStep: number;
+  totalSteps: number;
+  steps: { number: number; title: string; icon: React.ReactNode }[];
+}> = ({ currentStep, totalSteps, steps }) => {
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="date" className="form-label">
-          Date and Time <span className="text-danger">*</span>
-        </label>
-        <input
-          type="datetime-local"
-          className={`form-control ${errors.date ? "is-invalid" : ""}`}
-          id="date"
-          name="date"
-          value={formatDateForInput(formData.date)}
-          onChange={handleChange}
-        />
-        {errors.date && <div className="invalid-feedback">{errors.date}</div>}
-        <small className="text-muted">Example: 2025-11-06 13:44</small>
+    <div className="mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">
+          Course {currentStep === totalSteps ? "Details" : "Creation"}
+        </h2>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          Step {currentStep} of {totalSteps}
+        </span>
       </div>
 
-      <div className="mb-3">
-        <label htmlFor="description" className="form-label">
-          Description
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="e.g., Full Week, Weekend Per day"
-        />
-        <small className="text-muted">
-          Example: "Full Week", "Weekend Per day"
-        </small>
-      </div>
+      <div className="relative">
+        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200">
+          <div
+            className="absolute top-0 left-0 h-0.5 bg-blue-600 transition-all duration-300"
+            style={{
+              width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
+            }}
+          />
+        </div>
 
-      <div className="mb-3">
-        <label htmlFor="time" className="form-label">
-          Time Schedule
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="time"
-          name="time"
-          value={formData.time}
-          onChange={handleChange}
-          placeholder="e.g., 9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
-        />
-        <small className="text-muted">
-          Example: "9:00 AM - 4:30 PM (Eastern Time (GMT-5))"
-        </small>
-      </div>
+        <div className="relative flex justify-between">
+          {steps.map((step, index) => {
+            const isCompleted = step.number < currentStep;
+            const isCurrent = step.number === currentStep;
 
-      <div className="d-flex justify-content-end gap-2 mt-3">
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-        <button type="submit" className="btn btn-primary">
-          {initialData ? "Update Date" : "Add Date"}
-        </button>
+            return (
+              <div key={step.number} className="flex flex-col items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                    isCompleted
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : isCurrent
+                      ? "border-blue-600 bg-white text-blue-600"
+                      : "border-gray-300 bg-white text-gray-400"
+                  }`}
+                >
+                  {isCompleted ? (
+                    <FaCheckCircle className="w-4 h-4" />
+                  ) : (
+                    step.icon
+                  )}
+                </div>
+                <span
+                  className={`mt-2 text-xs font-medium text-center max-w-20 ${
+                    isCurrent ? "text-blue-600" : "text-gray-500"
+                  }`}
+                >
+                  {step.title}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </form>
+    </div>
   );
 };
 
+// ===== MAIN COMPONENT =====
 export default function DynamicCourseForm({
   mode = "create",
   courseId,
 }: DynamicCourseFormProps) {
   const router = useRouter();
   const isEditMode = mode === "edit";
+
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 8; // Updated to include TimeTable step
+  const totalSteps = 7;
   const [accumulatedFormData, setAccumulatedFormData] = useState<
     Record<string, any>
   >({});
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [faqs, setFaqs] = useState<Array<{ question: string; answer: string }>>(
-    []
-  );
-  const [timeTable, setTimeTable] = useState<ClassDateOption[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showFaqForm, setShowFaqForm] = useState(false);
-  const [showTimeTableForm, setShowTimeTableForm] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState<number | null>(
     null
   );
   const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
-  const [editingTimeTableIndex, setEditingTimeTableIndex] = useState<
-    number | null
-  >(null);
+
+  // Progress steps configuration
+  const progressSteps = [
+    { number: 1, title: "Basic Info", icon: <FaBook className="w-3 h-3" /> },
+    { number: 2, title: "Content", icon: <FaImage className="w-3 h-3" /> },
+    { number: 3, title: "Metadata", icon: <FaGlobe className="w-3 h-3" /> },
+    { number: 4, title: "Pricing", icon: <FaDollarSign className="w-3 h-3" /> },
+    { number: 5, title: "FAQ", icon: <FaQuestionCircle className="w-3 h-3" /> },
+    { number: 6, title: "Sessions", icon: <FaClock className="w-3 h-3" /> },
+    {
+      number: 7,
+      title: "Details",
+      icon: <FaCheckCircle className="w-3 h-3" />,
+    },
+  ];
 
   // API hooks
   const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
@@ -938,124 +956,11 @@ export default function DynamicCourseForm({
     skip: !isEditMode || !courseId,
   });
 
-  // Fetch instructors (users with instructor role)
-  const {
-    data: usersData,
-    error: usersError,
-    isLoading: usersLoading,
-  } = useGetUsersQuery({ role: 3 }); // Assuming role 3 is instructor
+  // Fetch instructors and categories
+  const { data: usersData } = useGetUsersQuery({ role: 3 });
+  const { data: categoriesData } = useGetCategoriesQuery({ isActive: true });
 
-  // Fetch categories
-  const {
-    data: categoriesData,
-    error: categoriesError,
-    isLoading: categoriesLoading,
-  } = useGetCategoriesQuery({ isActive: true });
-
-  // Helper function to format sessions for editing
-  const formatSessionsForEdit = (sessions: any[]) => {
-    return sessions
-      .map((session, index) => {
-        let sessionText = `SESSION ${index + 1}: ${session.title}`;
-        if (session.description)
-          sessionText += `\nDESCRIPTION: ${session.description}`;
-        if (session.sessionType)
-          sessionText += `\nTYPE: ${session.sessionType}`;
-        if (session.duration)
-          sessionText += `\nDURATION: ${session.duration} minutes`;
-        if (session.startTime) sessionText += `\nSTART: ${session.startTime}`;
-        if (session.endTime) sessionText += `\nEND: ${session.endTime}`;
-        if (session.videoUrl) sessionText += `\nVIDEO: ${session.videoUrl}`;
-        if (session.isFree) sessionText += `\nFREE: yes`;
-        if (session.dayGroup) sessionText += `\nDAY: ${session.dayGroup}`;
-        return sessionText;
-      })
-      .join("\n\n");
-  };
-
-  // Process course data for edit mode
-  const processedCourseData = useMemo(() => {
-    if (!isEditMode || !courseData) return {};
-
-    const course = courseData as any;
-    return {
-      // Basic Information
-      title: course?.title || "",
-      slug: course?.slug || "",
-      subtitle: course?.subtitle || "",
-      description: course?.description || "",
-      instructor: course?.instructor?.id || course?.instructor,
-      overview: course?.overview || "",
-      thumbnailUrl: course?.thumbnailUrl || "",
-      previewVideoUrl: course?.previewVideoUrl || "",
-
-      // Category & Classification
-      category: course?.category || "",
-      subcategories: course?.subcategories || [],
-      topics: course?.topics || [],
-
-      // Course Metadata
-      skillLevel: course?.snapshot?.skillLevel || SkillLevelEnum.ALL_LEVELS,
-      language: course?.snapshot?.language || "English",
-      captionsLanguage: course?.snapshot?.captionsLanguage || "",
-      certificate: course?.snapshot?.certificate !== false,
-      lifetimeAccess: course?.snapshot?.lifetimeAccess !== false,
-      mobileAccess: course?.snapshot?.mobileAccess !== false,
-
-      // Pricing
-      price: course?.price || 0,
-      discountedPrice: course?.discountedPrice || "",
-      discountPercentage: course?.discountPercentage || "",
-      currency: course?.currency || CurrencyEnum.USD,
-
-      // Course Details
-      whatYouWillLearn: course?.details?.whatYouWillLearn?.join("\n") || "",
-      requirements: course?.details?.requirements?.join("\n") || "",
-      targetAudience: course?.details?.targetAudience?.join("\n") || "",
-      features: course?.details?.features?.join("\n") || "",
-
-      // FAQ
-      faqsText:
-        course?.faqs
-          ?.map((faq: any) => `Q: ${faq.question}\nA: ${faq.answer}`)
-          .join("\n\n") || "",
-
-      // Sessions
-      sessionsText: course?.sessions
-        ? formatSessionsForEdit(course.sessions)
-        : "",
-
-      // Publishing & Status
-      isPublished: course?.isPublished || false,
-      isFeatured: course?.isFeatured || false,
-      isBestseller: course?.isBestseller || false,
-      isNew: course?.isNew || false,
-    };
-  }, [isEditMode, courseData]);
-
-  // Initialize sessions, FAQs, and timeTable from course data
-  React.useEffect(() => {
-    if (isEditMode && courseData) {
-      const course = courseData as any;
-      if (course?.sessions) {
-        setSessions(course.sessions);
-      }
-      if (course?.faqs) {
-        setFaqs(course.faqs);
-      }
-      if (course?.timeTable) {
-        setTimeTable(
-          course.timeTable.map((entry: any) => ({
-            date: new Date(entry.date),
-            description: entry.description || "",
-            time: entry.time || "",
-          }))
-        );
-      }
-    }
-  }, [isEditMode, courseData]);
-
-  // Process users data
+  // Process data for forms
   const instructors = useMemo(() => {
     if (!usersData) return [];
     return Array.isArray(usersData)
@@ -1063,29 +968,6 @@ export default function DynamicCourseForm({
       : (usersData as any)?.data || (usersData as any)?.users || [];
   }, [usersData]);
 
-  // Create instructor options
-  const instructorOptions = useMemo(() => {
-    console.log("Creating instructor options from:", instructors);
-    if (instructors.length === 0) {
-      console.log("No instructors available");
-      return [];
-    }
-
-    const options = [
-      { value: "", label: "-- Select an Instructor --", disabled: true },
-      ...instructors.map((instructor: any) => {
-        const value = instructor.id || instructor._id;
-        const label = `${instructor.firstName || "Unknown"} ${
-          instructor.lastName || ""
-        } (${instructor.email})`.trim();
-        console.log("Instructor option:", { value, label, instructor });
-        return { value, label };
-      }),
-    ];
-
-    console.log("Generated instructor options:", options);
-    return options;
-  }, [instructors]); // Process categories data
   const categories = useMemo(() => {
     if (!categoriesData) return [];
     return Array.isArray(categoriesData)
@@ -1095,128 +977,78 @@ export default function DynamicCourseForm({
           [];
   }, [categoriesData]);
 
-  // Create category options
-  const categoryOptions = useMemo(() => {
-    return categories.map((category: any) => ({
-      value: category.id || category._id || category.slug,
-      label: category.name || category.title,
-    }));
-  }, [categories]);
+  const instructorOptions = useMemo(
+    () => [
+      { value: "", label: "-- Select an Instructor --", disabled: true },
+      ...instructors.map((instructor: any) => ({
+        value: instructor.id || instructor._id,
+        label: `${instructor.firstName || "Unknown"} ${
+          instructor.lastName || ""
+        } (${instructor.email})`.trim(),
+      })),
+    ],
+    [instructors]
+  );
 
-  // Helper function to process FAQ text into array format
-  const processFAQsText = (faqText: string) => {
-    if (!faqText) return [];
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category: any) => ({
+        value: category.id || category._id || category.slug,
+        label: category.name || category.title,
+      })),
+    [categories]
+  );
 
-    const faqs: Array<{ question: string; answer: string }> = [];
-    const faqPairs = faqText.split("\n\n").filter((pair) => pair.trim());
+  // Initialize form data for edit mode
+  const processedCourseData = useMemo(() => {
+    if (!isEditMode || !courseData) return {};
+    const course = courseData as any;
 
-    faqPairs.forEach((pair) => {
-      const lines = pair.split("\n").filter((line) => line.trim());
-      let question = "";
-      let answer = "";
+    return {
+      title: course?.title || "",
+      slug: course?.slug || "",
+      subtitle: course?.subtitle || "",
+      description: course?.description || "",
+      instructor: course?.instructor?.id || course?.instructor,
+      overview: course?.overview || "",
+      thumbnailUrl: course?.thumbnailUrl || "",
+      previewVideoUrl: course?.previewVideoUrl || "",
+      category: course?.category?.id || course?.category || "",
+      subcategories: course?.subcategories || [],
+      topics: course?.topics || [],
+      skillLevel: course?.snapshot?.skillLevel || SkillLevelEnum.ALL_LEVELS,
+      language: course?.snapshot?.language || "English",
+      captionsLanguage: course?.snapshot?.captionsLanguage || "",
+      certificate: course?.snapshot?.certificate !== false,
+      lifetimeAccess: course?.snapshot?.lifetimeAccess !== false,
+      mobileAccess: course?.snapshot?.mobileAccess !== false,
+      price: course?.price || 0,
+      discountedPrice: course?.discountedPrice || "",
+      discountPercentage: course?.discountPercentage || "",
+      currency: course?.currency || CurrencyEnum.USD,
+      whatYouWillLearn: course?.details?.whatYouWillLearn?.join("\n") || "",
+      requirements: course?.details?.requirements?.join("\n") || "",
+      targetAudience: course?.details?.targetAudience?.join("\n") || "",
+      features: course?.details?.features?.join("\n") || "",
+      isPublished: course?.isPublished || false,
+      isFeatured: course?.isFeatured || false,
+      isBestseller: course?.isBestseller || false,
+      isNew: course?.isNew || false,
+    };
+  }, [isEditMode, courseData]);
 
-      lines.forEach((line) => {
-        if (line.startsWith("Q:")) {
-          question = line.substring(2).trim();
-        } else if (line.startsWith("A:")) {
-          answer = line.substring(2).trim();
-        }
-      });
-
-      if (question && answer) {
-        faqs.push({ question, answer });
-      }
-    });
-
-    return faqs;
-  };
-
-  // Helper function to process sessions text into array format
-  const processSessionsText = (sessionsText: string) => {
-    if (!sessionsText) return [];
-
-    const sessions: any[] = [];
-    const sessionBlocks = sessionsText
-      .split(/SESSION \d+:/i)
-      .filter((block) => block.trim());
-
-    sessionBlocks.forEach((block, index) => {
-      const lines = block
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line);
-      const session: any = {
-        title: "",
-        order: index,
-        duration: 60, // default duration
-        sessionType: SessionTypeEnum.LECTURE,
-        isFree: false,
-        isBreak: false,
-        topics: [],
-        resources: [],
-      };
-
-      // First line should be the title
-      if (lines[0]) {
-        session.title = lines[0];
-      }
-
-      lines.forEach((line) => {
-        if (line.startsWith("DESCRIPTION:")) {
-          session.description = line.substring(12).trim();
-        } else if (line.startsWith("TYPE:")) {
-          const type = line.substring(5).trim().toLowerCase();
-          if (
-            Object.values(SessionTypeEnum).includes(type as SessionTypeEnum)
-          ) {
-            session.sessionType = type;
-          }
-        } else if (line.startsWith("DURATION:")) {
-          const duration = parseInt(
-            line.substring(9).replace("minutes", "").trim()
-          );
-          if (!isNaN(duration)) session.duration = duration;
-        } else if (line.startsWith("START:")) {
-          session.startTime = line.substring(6).trim();
-        } else if (line.startsWith("END:")) {
-          session.endTime = line.substring(4).trim();
-        } else if (line.startsWith("VIDEO:")) {
-          session.videoUrl = line.substring(6).trim();
-        } else if (line.startsWith("FREE:")) {
-          session.isFree = line.substring(5).trim().toLowerCase() === "yes";
-        } else if (line.startsWith("DAY:")) {
-          session.dayGroup = line.substring(4).trim();
-        }
-      });
-
-      if (session.title) {
-        sessions.push(session);
-      }
-    });
-
-    return sessions;
-  };
-
-  // Session management functions
-  const addSession = () => {
-    setEditingSessionIndex(null);
-    setShowSessionForm(true);
-  };
-
-  const editSession = (index: number) => {
-    setEditingSessionIndex(index);
-    setShowSessionForm(true);
-  };
-
-  const deleteSession = (index: number) => {
-    if (confirm("Are you sure you want to delete this session?")) {
-      setSessions(sessions.filter((_, i) => i !== index));
+  // Initialize sessions and FAQs from course data
+  useEffect(() => {
+    if (isEditMode && courseData) {
+      const course = courseData as any;
+      if (course?.sessions) setSessions(course.sessions);
+      if (course?.faqs) setFaqs(course.faqs);
     }
-  };
+  }, [isEditMode, courseData]);
 
-  const saveSession = (sessionData: any) => {
+  // Session management
+  const handleSessionSave = (sessionData: Session) => {
     if (editingSessionIndex !== null) {
-      // Edit existing session
       const updatedSessions = [...sessions];
       updatedSessions[editingSessionIndex] = {
         ...sessionData,
@@ -1224,76 +1056,48 @@ export default function DynamicCourseForm({
       };
       setSessions(updatedSessions);
     } else {
-      // Add new session
-      setSessions([...sessions, { ...sessionData, order: sessions.length }]);
+      setSessions((prev) => [...prev, { ...sessionData, order: prev.length }]);
     }
     setShowSessionForm(false);
     setEditingSessionIndex(null);
   };
 
-  // FAQ management functions
-  const addFaq = () => {
-    setEditingFaqIndex(null);
-    setShowFaqForm(true);
+  const handleSessionEdit = (index: number) => {
+    setEditingSessionIndex(index);
+    setShowSessionForm(true);
   };
 
-  const editFaq = (index: number) => {
-    setEditingFaqIndex(index);
-    setShowFaqForm(true);
-  };
-
-  const deleteFaq = (index: number) => {
-    if (confirm("Are you sure you want to delete this FAQ?")) {
-      setFaqs(faqs.filter((_, i) => i !== index));
+  const handleSessionDelete = (index: number) => {
+    if (confirm("Are you sure you want to delete this session?")) {
+      setSessions((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
-  const saveFaq = (faqData: { question: string; answer: string }) => {
+  // FAQ management
+  const handleFaqSave = (faqData: FAQ) => {
     if (editingFaqIndex !== null) {
-      // Edit existing FAQ
       const updatedFaqs = [...faqs];
       updatedFaqs[editingFaqIndex] = faqData;
       setFaqs(updatedFaqs);
     } else {
-      // Add new FAQ
-      setFaqs([...faqs, faqData]);
+      setFaqs((prev) => [...prev, faqData]);
     }
     setShowFaqForm(false);
     setEditingFaqIndex(null);
   };
 
-  // TimeTable management functions
-  const addTimeTable = () => {
-    setEditingTimeTableIndex(null);
-    setShowTimeTableForm(true);
+  const handleFaqEdit = (index: number) => {
+    setEditingFaqIndex(index);
+    setShowFaqForm(true);
   };
 
-  const editTimeTable = (index: number) => {
-    setEditingTimeTableIndex(index);
-    setShowTimeTableForm(true);
-  };
-
-  const deleteTimeTable = (index: number) => {
-    if (confirm("Are you sure you want to delete this class date?")) {
-      setTimeTable(timeTable.filter((_, i) => i !== index));
+  const handleFaqDelete = (index: number) => {
+    if (confirm("Are you sure you want to delete this FAQ?")) {
+      setFaqs((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
-  const saveTimeTable = (timeTableData: ClassDateOption) => {
-    if (editingTimeTableIndex !== null) {
-      // Edit existing timeTable entry
-      const updatedTimeTable = [...timeTable];
-      updatedTimeTable[editingTimeTableIndex] = timeTableData;
-      setTimeTable(updatedTimeTable);
-    } else {
-      // Add new timeTable entry
-      setTimeTable([...timeTable, timeTableData]);
-    }
-    setShowTimeTableForm(false);
-    setEditingTimeTableIndex(null);
-  };
-
-  // Dynamic form configuration
+  // Form configuration with validation
   const getFormConfig = (step: number): DynamicFormConfig => {
     const baseConfig = {
       layout: "vertical" as const,
@@ -1301,461 +1105,306 @@ export default function DynamicCourseForm({
       showProgress: !isEditMode,
     };
 
-    switch (step) {
-      case 1:
-        return {
-          ...baseConfig,
-          title: `${isEditMode ? "Edit" : "Create"} Course - Basic Information`,
-          description: "Enter the basic course information",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Cancel",
-          fields: [
-            {
-              name: "title",
-              label: "Course Title",
-              type: "text",
-              placeholder: "Enter course title",
-              validation: { required: true, maxLength: 200 },
-              icon: <FaBook />,
-            },
-            {
-              name: "slug",
-              label: "Course Slug",
-              type: "text",
-              placeholder: "course-slug (auto-generated if empty)",
-              validation: { maxLength: 200 },
-              description: "URL-friendly version of the title",
-            },
-            {
-              name: "subtitle",
-              label: "Subtitle",
-              type: "text",
-              placeholder: "Brief subtitle for the course",
-              validation: { maxLength: 300 },
-            },
-            {
-              name: "instructor",
-              label: "Instructor",
-              type: "select",
-              placeholder: usersLoading
-                ? "Loading instructors..."
-                : instructorOptions.length > 0
-                ? "Select an instructor"
-                : "No instructors available",
-              validation: {
-                required: true,
-                custom: (value: string) => {
-                  console.log(
-                    "Validating instructor value:",
-                    value,
-                    typeof value
-                  );
-                  if (!value || value.trim() === "") {
-                    return "Please select an instructor";
-                  }
-                  return null;
-                },
+    const stepConfigs = {
+      1: {
+        ...baseConfig,
+        title: "Course Basic Information",
+        description: "Enter the fundamental details about your course",
+        submitText: "Next: Content & Media",
+        cancelText: "Cancel",
+        fields: [
+          {
+            name: "title",
+            label: "Course Title",
+            type: "text",
+            validation: { required: true },
+            icon: <FaBook />,
+          },
+          {
+            name: "slug",
+            label: "Course Slug",
+            type: "text",
+            description: "URL-friendly version (auto-generated if empty)",
+          },
+          {
+            name: "subtitle",
+            label: "Subtitle",
+            type: "text",
+            description: "Brief description that appears in listings",
+          },
+          {
+            name: "instructor",
+            label: "Instructor",
+            type: "select",
+            validation: { required: true },
+            options: instructorOptions,
+            icon: <FaUser />,
+          },
+          {
+            name: "category",
+            label: "Category",
+            type: "select",
+            validation: { required: true },
+            options: categoryOptions,
+            icon: <FaTag />,
+          },
+          {
+            name: "description",
+            label: "Course Description",
+            type: "textarea",
+            validation: { required: true },
+            description: "Detailed overview of what students will learn",
+          },
+        ],
+      },
+      2: {
+        ...baseConfig,
+        title: "Course Content & Media",
+        description: "Add engaging media and content details",
+        submitText: "Next: Metadata",
+        cancelText: "Previous",
+        fields: [
+          {
+            name: "overview",
+            label: "Course Overview",
+            type: "textarea",
+            description: "Comprehensive overview of course content",
+          },
+          {
+            name: "thumbnailUrl",
+            label: "Thumbnail URL",
+            type: "url",
+            icon: <FaImage />,
+            description: "Course preview image",
+          },
+          {
+            name: "previewVideoUrl",
+            label: "Preview Video URL",
+            type: "url",
+            icon: <FaVideo />,
+            description: "Course introduction video",
+          },
+          {
+            name: "subcategories",
+            label: "Subcategories",
+            type: "text",
+            description: "Comma-separated subcategories",
+            validation: {
+              custom: (value: string) => {
+                if (value && !Array.isArray(processArrayField(value))) {
+                  return "Subcategories must be an array";
+                }
+                return null;
               },
-              options: instructorOptions,
-              disabled:
-                usersLoading || !!usersError || instructorOptions.length === 0,
-              icon: <FaUser />,
             },
-            {
-              name: "category",
-              label: "Category",
-              type: "select",
-              placeholder: categoriesLoading
-                ? "Loading categories..."
-                : "Select course category",
-              validation: { required: true },
-              options: categoryOptions,
-              disabled: categoriesLoading || !!categoriesError,
-              icon: <FaTag />,
-            },
-            {
-              name: "description",
-              label: "Course Description",
-              type: "textarea",
-              placeholder: "Detailed description of the course",
-              validation: { required: true, maxLength: 2000 },
-            },
-          ],
-        };
-
-      case 2:
-        return {
-          ...baseConfig,
-          title: "Course Content & Media",
-          description: "Add course overview, images, and preview video",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "overview",
-              label: "Course Overview",
-              type: "textarea",
-              placeholder: "Comprehensive overview of the course",
-              validation: { maxLength: 3000 },
-            },
-            {
-              name: "thumbnailUrl",
-              label: "Thumbnail URL",
-              type: "url",
-              placeholder: "https://example.com/thumbnail.jpg",
-              validation: {
-                pattern: /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i,
+          },
+          {
+            name: "topics",
+            label: "Course Topics",
+            type: "text",
+            description: "Comma-separated topics covered",
+            validation: {
+              custom: (value: string) => {
+                if (value && !Array.isArray(processArrayField(value))) {
+                  return "Topics must be an array";
+                }
+                return null;
               },
-              description: "Must be a valid image URL (jpg, png, gif, webp)",
-              icon: <FaImage />,
             },
-            {
-              name: "previewVideoUrl",
-              label: "Preview Video URL",
-              type: "url",
-              placeholder: "https://example.com/preview-video.mp4",
-              validation: {
-                pattern: /^https?:\/\/.+\.(mp4|mov|avi|wmv|flv|webm)(\?.*)?$/i,
-              },
-              description:
-                "Must be a valid video URL (mp4, mov, avi, wmv, flv, webm)",
-              icon: <FaVideo />,
+          },
+        ],
+      },
+      3: {
+        ...baseConfig,
+        title: "Course Metadata",
+        description: "Set course requirements and accessibility",
+        submitText: "Next: Pricing",
+        cancelText: "Previous",
+        fields: [
+          {
+            name: "skillLevel",
+            label: "Skill Level",
+            type: "select",
+            validation: { required: true },
+            options: Object.values(SkillLevelEnum).map((level) => ({
+              value: level,
+              label: level,
+            })),
+          },
+          {
+            name: "language",
+            label: "Course Language",
+            type: "text",
+            validation: { required: true },
+            icon: <FaGlobe />,
+          },
+          {
+            name: "captionsLanguage",
+            label: "Captions Language",
+            type: "text",
+          },
+          {
+            name: "certificate",
+            label: "Certificate Available",
+            type: "checkbox",
+            defaultValue: true,
+          },
+          {
+            name: "lifetimeAccess",
+            label: "Lifetime Access",
+            type: "checkbox",
+            defaultValue: true,
+          },
+          {
+            name: "mobileAccess",
+            label: "Mobile Access",
+            type: "checkbox",
+            defaultValue: true,
+          },
+        ],
+      },
+      4: {
+        ...baseConfig,
+        title: "Pricing & Publication",
+        description: "Set pricing and publication settings",
+        submitText: "Next: FAQ",
+        cancelText: "Previous",
+        fields: [
+          {
+            name: "price",
+            label: "Course Price",
+            type: "number",
+            validation: {
+              required: true,
+              custom: validatePrice,
             },
-            {
-              name: "subcategories",
-              label: "Subcategories",
-              type: "text",
-              placeholder: "Enter subcategories (comma-separated)",
-              description: "Use commas to separate multiple subcategories",
+            icon: <FaDollarSign />,
+            description: "Must be a number greater than or equal to 0",
+          },
+          {
+            name: "currency",
+            label: "Currency",
+            type: "select",
+            validation: { required: true },
+            options: Object.values(CurrencyEnum).map((currency) => ({
+              value: currency,
+              label: currency,
+            })),
+          },
+          {
+            name: "discountedPrice",
+            label: "Discounted Price",
+            type: "number",
+            validation: {
+              custom: (value: any, formData: any) =>
+                validateDiscountedPrice(value, Number(formData.price)),
             },
-            {
-              name: "topics",
-              label: "Course Topics",
-              type: "text",
-              placeholder: "Enter topics (comma-separated)",
-              description: "Use commas to separate multiple topics",
+            description: "Must be less than or equal to regular price",
+          },
+          {
+            name: "discountPercentage",
+            label: "Discount Percentage",
+            type: "number",
+            validation: {
+              custom: validateDiscountPercentage,
             },
-          ],
-        };
+            description: "Must be between 0 and 100",
+          },
+          {
+            name: "isPublished",
+            label: "Publish Course",
+            type: "checkbox",
+          },
+          {
+            name: "isFeatured",
+            label: "Featured Course",
+            type: "checkbox",
+          },
+          {
+            name: "isBestseller",
+            label: "Bestseller",
+            type: "checkbox",
+          },
+          {
+            name: "isNew",
+            label: "New Course",
+            type: "checkbox",
+          },
+        ],
+      },
+      5: {
+        ...baseConfig,
+        title: "FAQ Management",
+        description: "Add frequently asked questions",
+        submitText: "Next: Sessions",
+        cancelText: "Previous",
+        fields: [
+          {
+            name: "faqManagement",
+            label: "Frequently Asked Questions",
+            type: "text",
+          },
+        ],
+      },
+      6: {
+        ...baseConfig,
+        title: "Course Sessions",
+        description: "Structure your course with sessions and schedules",
+        submitText: "Next: Final Details",
+        cancelText: "Previous",
+        fields: [
+          { name: "sessionManagement", label: "Course Sessions", type: "text" },
+        ],
+      },
+      7: {
+        ...baseConfig,
+        title: "Course Details",
+        description: "Finalize learning objectives and requirements",
+        submitText: isEditMode ? "Update Course" : "Create Course",
+        cancelText: "Previous",
+        fields: [
+          {
+            name: "whatYouWillLearn",
+            label: "What You Will Learn",
+            type: "textarea",
+            validation: { required: true },
+            description: "One learning objective per line",
+          },
+          {
+            name: "requirements",
+            label: "Requirements",
+            type: "textarea",
+            description: "One requirement per line",
+          },
+          {
+            name: "targetAudience",
+            label: "Target Audience",
+            type: "textarea",
+            description: "One audience segment per line",
+          },
+          {
+            name: "features",
+            label: "Course Features",
+            type: "textarea",
+            description: "One feature per line",
+          },
+        ],
+      },
+    };
 
-      case 3:
-        return {
-          ...baseConfig,
-          title: "Course Metadata",
-          description: "Set course level, language, and access settings",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "skillLevel",
-              label: "Skill Level",
-              type: "select",
-              validation: { required: true },
-              options: Object.values(SkillLevelEnum).map((level) => ({
-                value: level,
-                label: level,
-              })),
-              defaultValue: SkillLevelEnum.ALL_LEVELS,
-            },
-            {
-              name: "language",
-              label: "Course Language",
-              type: "text",
-              placeholder: "English",
-              validation: { required: true },
-              defaultValue: "English",
-              icon: <FaGlobe />,
-            },
-            {
-              name: "captionsLanguage",
-              label: "Captions Language",
-              type: "text",
-              placeholder: "English",
-            },
-            {
-              name: "certificate",
-              label: "Certificate Available",
-              type: "checkbox",
-              defaultValue: true,
-              description:
-                "Students will receive a certificate upon completion",
-            },
-            {
-              name: "lifetimeAccess",
-              label: "Lifetime Access",
-              type: "checkbox",
-              defaultValue: true,
-              description: "Students get lifetime access to the course",
-            },
-            {
-              name: "mobileAccess",
-              label: "Mobile Access",
-              type: "checkbox",
-              defaultValue: true,
-              description: "Course is accessible on mobile devices",
-            },
-          ],
-        };
-
-      case 4:
-        return {
-          ...baseConfig,
-          title: "Pricing & Publication",
-          description: "Set course pricing and publication settings",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "price",
-              label: "Course Price",
-              type: "number",
-              placeholder: "0",
-              validation: { required: true, min: 0 },
-              icon: <FaDollarSign />,
-              defaultValue: 0,
-            },
-            {
-              name: "currency",
-              label: "Currency",
-              type: "select",
-              validation: { required: true },
-              options: Object.values(CurrencyEnum).map((currency) => ({
-                value: currency,
-                label: currency,
-              })),
-              defaultValue: CurrencyEnum.USD,
-            },
-            {
-              name: "discountedPrice",
-              label: "Discounted Price",
-              type: "number",
-              placeholder: "Optional discounted price",
-              validation: { min: 0 },
-            },
-            {
-              name: "discountPercentage",
-              label: "Discount Percentage",
-              type: "number",
-              placeholder: "0-100",
-              validation: { min: 0, max: 100 },
-            },
-            {
-              name: "isPublished",
-              label: "Publish Course",
-              type: "checkbox",
-              defaultValue: false,
-              description: "Make the course visible to students",
-            },
-            {
-              name: "isFeatured",
-              label: "Featured Course",
-              type: "checkbox",
-              defaultValue: false,
-              description: "Feature this course on the homepage",
-            },
-            {
-              name: "isBestseller",
-              label: "Bestseller",
-              type: "checkbox",
-              defaultValue: false,
-              description: "Mark as bestseller",
-            },
-            {
-              name: "isNew",
-              label: "New Course",
-              type: "checkbox",
-              defaultValue: false,
-              description: "Mark as new course",
-            },
-          ],
-        };
-
-      case 5:
-        return {
-          ...baseConfig,
-          title: "FAQ Management",
-          description: "Add frequently asked questions about your course",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "faqManagement",
-              label: "Frequently Asked Questions",
-              type: "text", // We'll render custom content
-              placeholder: "",
-              validation: {},
-              description: "Manage your course FAQs using the interface below.",
-            },
-          ],
-        };
-
-      case 6:
-        return {
-          ...baseConfig,
-          title: "Course Sessions",
-          description: "Add course sessions, lectures, and content structure",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "sessionManagement",
-              label: "Course Sessions",
-              type: "text", // We'll render custom content
-              placeholder: "",
-              validation: {},
-              description:
-                "Manage your course sessions using the interface below.",
-            },
-          ],
-        };
-
-      case 7:
-        return {
-          ...baseConfig,
-          title: "Class Schedule (TimeTable)",
-          description: "Add class dates and schedule options",
-          submitText: isEditMode ? "Update Course" : "Next Step",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "timeTableManagement",
-              label: "Class Schedule",
-              type: "text", // We'll render custom content
-              placeholder: "",
-              validation: {},
-              description:
-                "Manage your class schedule using the interface below.",
-            },
-          ],
-        };
-
-      case 8:
-        return {
-          ...baseConfig,
-          title: "Course Details",
-          description:
-            "Add learning objectives, requirements, and target audience",
-          submitText: isEditMode ? "Update Course" : "Create Course",
-          cancelText: "Previous",
-          fields: [
-            {
-              name: "whatYouWillLearn",
-              label: "What You Will Learn",
-              type: "textarea",
-              placeholder: "Enter learning objectives (one per line)",
-              validation: { required: true },
-              description: "Enter each learning objective on a new line",
-            },
-            {
-              name: "requirements",
-              label: "Requirements",
-              type: "textarea",
-              placeholder: "Enter course requirements (one per line)",
-              description: "Enter each requirement on a new line",
-            },
-            {
-              name: "targetAudience",
-              label: "Target Audience",
-              type: "textarea",
-              placeholder: "Who is this course for? (one per line)",
-              description: "Enter each target audience point on a new line",
-            },
-            {
-              name: "features",
-              label: "Course Features",
-              type: "textarea",
-              placeholder: "Enter course features (one per line)",
-              description: "Enter each feature on a new line",
-            },
-          ],
-        };
-
-      default:
-        return { ...baseConfig, fields: [] };
-    }
+    return (
+      stepConfigs[step as keyof typeof stepConfigs] || {
+        ...baseConfig,
+        fields: [],
+      }
+    );
   };
 
+  // Form submission with comprehensive validation
   const handleSubmit = async (data: Record<string, any>) => {
-    console.log(
-      `${isEditMode ? "Updating" : "Creating"} course with data:`,
-      data
-    );
+    // Validate all form data before submission
+    const validationErrors = validateFormData(data, faqs, sessions);
 
-    // Console all form values with focus on instructor and category
-    console.log("=== FORM VALUES DEBUG ===");
-    console.log("Instructor value:", data.instructor);
-    console.log("Category value:", data.category);
-    console.log("All form data:", JSON.stringify(data, null, 2));
-    console.log("========================");
-
-    // Debug instructor data
-    console.log("Instructor field:", {
-      value: data.instructor,
-      type: typeof data.instructor,
-      isValid: data.instructor ? isValidObjectId(data.instructor) : false,
-      availableInstructors: instructors.map((i: any) => ({
-        id: i.id || i._id,
-        name: `${i.firstName} ${i.lastName}`,
-      })),
-    });
-
-    // Debug category data
-    console.log("Category field:", {
-      value: data.category,
-      type: typeof data.category,
-      isValid: data.category ? isValidObjectId(data.category) : false,
-      availableCategories: categories?.map((cat: any) => ({
-        id: cat._id || cat.id,
-        name: cat.name,
-      })),
-    });
-
-    // Validate required fields before processing
-    const validationErrors: string[] = [];
-
-    if (!data.title || data.title.trim() === "") {
-      validationErrors.push("Course title is required");
-    }
-
-    if (!data.description || data.description.trim() === "") {
-      validationErrors.push("Course description is required");
-    }
-
-    if (!data.instructor || data.instructor.trim() === "") {
-      validationErrors.push("Instructor selection is required");
-    } else if (!isValidObjectId(data.instructor)) {
-      validationErrors.push("Invalid instructor selected");
-    }
-
-    if (!data.category || data.category.trim() === "") {
-      validationErrors.push("Course category is required");
-    }
-
-    if (!data.whatYouWillLearn || data.whatYouWillLearn.trim() === "") {
-      validationErrors.push("Learning objectives are required");
-    }
-
-    // FAQ validation - ensure FAQs have both question and answer
-    const validFaqs = faqs.filter(
-      (faq) => faq.question?.trim() && faq.answer?.trim()
-    );
-    if (faqs.length > 0 && validFaqs.length === 0) {
-      validationErrors.push(
-        "If adding FAQs, at least one complete FAQ (question and answer) is required"
-      );
-    }
-
-    // Sessions validation - ensure sessions have title and description
-    const validSessions = sessions.filter(
-      (session) => session.title?.trim() && session.description?.trim()
-    );
-    if (sessions.length > 0 && validSessions.length === 0) {
-      validationErrors.push(
-        "If adding sessions, at least one complete session (title and description) is required"
-      );
-    }
-
-    // Show validation errors if any
     if (validationErrors.length > 0) {
       const errorMessage =
         "Please fix the following errors:\n" + validationErrors.join("\n");
@@ -1765,41 +1414,40 @@ export default function DynamicCourseForm({
     }
 
     try {
-      // Process the form data
       const processedData = {
-        // Basic Information - ensure all are strings and not empty
-        title: data.title.trim(),
-        slug:
-          data.slug?.trim() ||
-          data.title?.toLowerCase().replace(/[^a-z0-9]+/g, "-") ||
-          "",
-        subtitle: data.subtitle?.trim() || "",
-        description: data.description.trim(),
-        instructor: data.instructor, // MongoDB ObjectId string
-        overview: data.overview?.trim() || "",
-        thumbnailUrl: data.thumbnailUrl?.trim() || "",
-        previewVideoUrl: data.previewVideoUrl?.trim() || "",
+        ...data,
+        // Process array fields
+        subcategories: processArrayField(data.subcategories || []),
+        topics: processArrayField(data.topics || []),
 
-        // Category & Classification - ensure category is string and not empty
-        category: data.category, // MongoDB ObjectId string
-        subcategories: data.subcategories
-          ? Array.isArray(data.subcategories)
-            ? data.subcategories
-            : data.subcategories
-                .split(",")
-                .map((s: string) => s.trim())
-                .filter((s: string) => s.length > 0)
-          : [],
-        topics: data.topics
-          ? Array.isArray(data.topics)
-            ? data.topics
-            : data.topics
-                .split(",")
-                .map((s: string) => s.trim())
-                .filter((s: string) => s.length > 0)
-          : [],
+        snapshot: {
+          skillLevel: data.skillLevel,
+          language: data.language,
+          captionsLanguage: data.captionsLanguage,
+          certificate: data.certificate !== false,
+          lifetimeAccess: data.lifetimeAccess !== false,
+          mobileAccess: data.mobileAccess !== false,
+        },
+        details: {
+          whatYouWillLearn:
+            data.whatYouWillLearn
+              ?.split("\n")
+              .filter((s: string) => s.trim()) || [],
+          requirements:
+            data.requirements?.split("\n").filter((s: string) => s.trim()) ||
+            [],
+          targetAudience:
+            data.targetAudience?.split("\n").filter((s: string) => s.trim()) ||
+            [],
+          features:
+            data.features?.split("\n").filter((s: string) => s.trim()) || [],
+        },
+        faqs: faqs.filter((faq) => faq.question?.trim() && faq.answer?.trim()),
+        sessions: sessions.filter(
+          (session) => session.title?.trim() && session.description?.trim()
+        ),
 
-        // Pricing
+        // Ensure numeric fields are properly formatted
         price: Number(data.price) || 0,
         discountedPrice: data.discountedPrice
           ? Number(data.discountedPrice)
@@ -1807,95 +1455,10 @@ export default function DynamicCourseForm({
         discountPercentage: data.discountPercentage
           ? Number(data.discountPercentage)
           : undefined,
-        currency: data.currency || CurrencyEnum.USD,
-
-        // Course Metadata
-        snapshot: {
-          skillLevel: data.skillLevel || SkillLevelEnum.ALL_LEVELS,
-          language: data.language || "English",
-          captionsLanguage: data.captionsLanguage,
-          certificate: data.certificate !== false,
-          lifetimeAccess: data.lifetimeAccess !== false,
-          mobileAccess: data.mobileAccess !== false,
-        },
-
-        // Course Details
-        details: {
-          whatYouWillLearn: data.whatYouWillLearn
-            ? data.whatYouWillLearn.split("\n").filter((s: string) => s.trim())
-            : [],
-          requirements: data.requirements
-            ? data.requirements.split("\n").filter((s: string) => s.trim())
-            : [],
-          targetAudience: data.targetAudience
-            ? data.targetAudience.split("\n").filter((s: string) => s.trim())
-            : [],
-          features: data.features
-            ? data.features.split("\n").filter((s: string) => s.trim())
-            : [],
-        },
-
-        // FAQ Processing - only include valid FAQs
-        faqs: faqs
-          .filter((faq) => faq.question?.trim() && faq.answer?.trim())
-          .map((faq) => ({
-            question: String(faq.question.trim()),
-            answer: String(faq.answer.trim()),
-          })),
-
-        // Sessions Processing - only include valid sessions with required fields
-        sessions: sessions
-          .filter(
-            (session) => session.title?.trim() && session.description?.trim()
-          )
-          .map((session) => ({
-            title: String(session.title.trim()),
-            description: String(session.description.trim()),
-            duration: Number(session.duration) || 0,
-            sessionType:
-              session.sessionType === "practical" ||
-              session.sessionType === "workshop" ||
-              session.sessionType === "seminar" ||
-              session.sessionType === "assignment" ||
-              session.sessionType === "exam"
-                ? "lecture" // Map unsupported types to lecture
-                : session.sessionType || SessionTypeEnum.LECTURE,
-            dayGroup: String(session.dayGroup || ""),
-            startTime: String(session.startTime || ""),
-            endTime: String(session.endTime || ""),
-            isFree: Boolean(session.isFree),
-            materials: Array.isArray(session.materials)
-              ? session.materials
-              : [],
-            objectives: Array.isArray(session.objectives)
-              ? session.objectives
-              : [],
-            prerequisites: Array.isArray(session.prerequisites)
-              ? session.prerequisites
-              : [],
-          })),
-
-        // TimeTable Processing - include all timeTable entries
-        timeTable: timeTable.map((entry) => ({
-          date: new Date(entry.date).toISOString(),
-          description: entry.description || "",
-          time: entry.time || "",
-        })),
-
-        // Publishing & Status
-        isPublished: data.isPublished || false,
-        isFeatured: data.isFeatured || false,
-        isBestseller: data.isBestseller || false,
-        isNew: data.isNew || false,
       };
 
-      console.log("Processed data being sent:", processedData);
-
       if (isEditMode && courseId) {
-        await updateCourse({
-          id: courseId,
-          data: processedData,
-        }).unwrap();
+        await updateCourse({ id: courseId, data: processedData }).unwrap();
         toast.success("Course updated successfully!");
       } else {
         await createCourse(processedData).unwrap();
@@ -1904,35 +1467,20 @@ export default function DynamicCourseForm({
 
       router.push("/dashboard/courses");
     } catch (error: any) {
-      console.error(
-        `Error ${isEditMode ? "updating" : "creating"} course:`,
-        error
-      );
-
       const errorMessage =
         error?.data?.message ||
         error?.message ||
-        `Failed to ${
-          isEditMode ? "update" : "create"
-        } course. Please try again.`;
+        `Failed to ${isEditMode ? "update" : "create"} course.`;
       toast.error(errorMessage);
     }
   };
 
   const handleStepSubmit = (data: Record<string, any>) => {
-    console.log("Step submit data:", data);
-    console.log("Current step:", currentStep);
-    console.log("Accumulated data before:", accumulatedFormData);
-
-    // Accumulate form data from current step
     const updatedFormData = { ...accumulatedFormData, ...data };
     setAccumulatedFormData(updatedFormData);
 
-    console.log("Updated form data:", updatedFormData);
-
-    // Only submit when we reach the final step (step 7)
     if (currentStep === totalSteps) {
-      return handleSubmit(updatedFormData);
+      handleSubmit(updatedFormData);
     } else {
       setCurrentStep((prev) => prev + 1);
     }
@@ -1946,673 +1494,354 @@ export default function DynamicCourseForm({
     }
   };
 
-  // Show loading state
-  if (usersLoading || categoriesLoading || (isEditMode && courseLoading)) {
+  // Loading state
+  if (courseLoading) {
     return (
-      <div className="page-wrapper" style={{ minHeight: "100vh" }}>
-        <div className="content container-fluid">
-          <div className="row justify-content-center">
-            <div className="col-xl-10">
-              <div className="card">
-                <div className="card-body">
-                  <div
-                    className="d-flex justify-content-center align-items-center"
-                    style={{ height: "300px" }}
-                  >
-                    <div className="text-center">
-                      <div
-                        className="spinner-border text-primary"
-                        role="status"
-                      >
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                      <p className="mt-3 text-muted">
-                        Loading{" "}
-                        {isEditMode && courseLoading
-                          ? "course data"
-                          : usersLoading && categoriesLoading
-                          ? "instructors and categories"
-                          : usersLoading
-                          ? "instructors"
-                          : "categories"}
-                        ...
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state
-  if (usersError || categoriesError || (isEditMode && courseError)) {
-    return (
-      <div className="page-wrapper" style={{ minHeight: "100vh" }}>
-        <div className="content container-fluid">
-          <div className="row justify-content-center">
-            <div className="col-xl-10">
-              <div className="card">
-                <div className="card-body">
-                  <div className="alert alert-danger">
-                    <h4 className="alert-heading">Error Loading Data</h4>
-                    {!!courseError && isEditMode && (
-                      <p className="mb-2">
-                        <strong>Course Error:</strong> Failed to load course
-                        data
-                      </p>
-                    )}
-                    {!!usersError && (
-                      <p className="mb-2">
-                        <strong>Instructors Error:</strong> Failed to load
-                        instructors
-                      </p>
-                    )}
-                    {!!categoriesError && (
-                      <p className="mb-0">
-                        <strong>Categories Error:</strong> Failed to load
-                        categories
-                      </p>
-                    )}
-                    <hr />
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => window.location.reload()}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading course data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-wrapper" style={{ minHeight: "100vh" }}>
-      <div className="content container-fluid">
-        <div className="row justify-content-center">
-          <div className="col-xl-10">
-            {/* Progress indicator for both create and edit modes */}
-            <div className="card mb-4">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="mb-0">
-                    Course {isEditMode ? "Update" : "Creation"} Progress
-                  </h5>
-                  <span className="badge bg-primary">
-                    Step {currentStep} of {totalSteps}
-                  </span>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Progress Header */}
+        <StepProgress
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          steps={progressSteps}
+        />
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* FAQ Management Step */}
+          {currentStep === 5 && (
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <FaQuestionCircle className="w-6 h-6 text-blue-600 mr-3" />
+                    FAQ Management
+                  </h3>
+                  <p className="text-gray-600 mt-2">
+                    Create helpful questions and answers for your course
+                  </p>
                 </div>
-                <div className="progress" style={{ height: "8px" }}>
-                  <div
-                    className="progress-bar bg-primary"
-                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                  />
-                </div>
-                <div className="d-flex justify-content-between mt-2">
-                  <small className="text-muted">Basic Info</small>
-                  <small className="text-muted">Content</small>
-                  <small className="text-muted">Metadata</small>
-                  <small className="text-muted">Pricing</small>
-                  <small className="text-muted">FAQ</small>
-                  <small className="text-muted">Sessions</small>
-                  <small className="text-muted">Schedule</small>
-                  <small className="text-muted">Details</small>
-                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={() => setShowFaqForm(true)}
+                >
+                  <FaPlus className="w-4 h-4 mr-2" />
+                  Add FAQ
+                </button>
               </div>
-            </div>
 
-            <div className="card">
-              <div className="card-body">
-                {/* FAQ Management Interface */}
-                {currentStep === 5 && (
-                  <div className="faq-management">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <div>
-                        <h5 className="mb-1">
-                          <FaQuestionCircle className="me-2 text-primary" />
-                          FAQ Management
-                        </h5>
-                        <small className="text-muted">
-                          Create helpful questions and answers for your course
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-lg"
-                        onClick={addFaq}
-                      >
-                        <FaPlus className="me-2" />
-                        Add New FAQ
-                      </button>
-                    </div>
-
-                    {faqs.length === 0 ? (
-                      <div className="text-center py-5">
-                        <div
-                          className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                          style={{ width: "80px", height: "80px" }}
-                        >
-                          <FaQuestionCircle className="text-muted" size={40} />
-                        </div>
-                        <h6 className="mb-2">No FAQs added yet</h6>
-                        <p className="text-muted mb-4">
-                          Help students by adding frequently asked questions
-                          about your course
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={addFaq}
-                        >
-                          <FaPlus className="me-2" />
-                          Create Your First FAQ
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <small className="text-muted">
-                            {faqs.length} FAQ{faqs.length !== 1 ? "s" : ""}{" "}
-                            created
-                          </small>
-                        </div>
-                        <div className="faq-list">
-                          {faqs.map((faq, index) => (
-                            <div
-                              key={index}
-                              className="card mb-3 border-start border-4 border-primary"
-                            >
-                              <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-start">
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex align-items-center mb-2">
-                                      <span className="badge bg-primary me-2">
-                                        Q{index + 1}
-                                      </span>
-                                      <h6 className="mb-0 fw-bold">
-                                        {faq.question}
-                                      </h6>
-                                    </div>
-                                    <div className="ps-4">
-                                      <p className="text-muted mb-0">
-                                        <strong>Answer:</strong> {faq.answer}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="btn-group">
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-primary btn-sm"
-                                      onClick={() => editFaq(index)}
-                                      title="Edit FAQ"
-                                    >
-                                      <FaEdit />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-danger btn-sm"
-                                      onClick={() => deleteFaq(index)}
-                                      title="Delete FAQ"
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  </div>
-                                </div>
+              {faqs.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                  <FaQuestionCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    No FAQs added yet
+                  </h4>
+                  <p className="text-gray-500 mb-4">
+                    Help students by adding frequently asked questions
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    onClick={() => setShowFaqForm(true)}
+                  >
+                    <FaPlus className="w-4 h-4 mr-2" />
+                    Create Your First FAQ
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {faqs.map((faq, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-50 rounded-lg border border-gray-200 p-6"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-start space-x-3">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-medium flex-shrink-0 mt-0.5">
+                              Q
+                            </span>
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                                {faq.question}
+                              </h4>
+                              <div className="flex items-start space-x-3">
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-sm font-medium flex-shrink-0">
+                                  A
+                                </span>
+                                <p className="text-gray-700 leading-relaxed">
+                                  {faq.answer}
+                                </p>
                               </div>
                             </div>
-                          ))}
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          <button
+                            type="button"
+                            className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onClick={() => handleFaqEdit(index)}
+                          >
+                            <FaEdit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                            onClick={() => handleFaqDelete(index)}
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-                    {/* FAQ Form */}
-                    {showFaqForm && (
-                      <div className="card mt-4 border-primary">
-                        <div className="card-header bg-primary text-white">
-                          <h6 className="mb-0">
-                            {editingFaqIndex !== null
-                              ? "Edit FAQ"
-                              : "Add New FAQ"}
-                          </h6>
-                        </div>
-                        <div className="card-body">
-                          <FaqForm
-                            initialData={
-                              editingFaqIndex !== null
-                                ? faqs[editingFaqIndex]
-                                : undefined
-                            }
-                            onSave={saveFaq}
-                            onCancel={() => setShowFaqForm(false)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="d-flex justify-content-between mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={handleCancel}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                          // For step 5 (FAQ), just move to next step since FAQs are managed separately
-                          handleStepSubmit({});
+              {showFaqForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {editingFaqIndex !== null ? "Edit FAQ" : "Add New FAQ"}
+                      </h3>
+                    </div>
+                    <div className="p-6">
+                      <FaqForm
+                        initialData={
+                          editingFaqIndex !== null
+                            ? faqs[editingFaqIndex]
+                            : undefined
+                        }
+                        onSave={handleFaqSave}
+                        onCancel={() => {
+                          setShowFaqForm(false);
+                          setEditingFaqIndex(null);
                         }}
-                      >
-                        Next Step
-                      </button>
+                      />
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Sessions Management Interface */}
-                {currentStep === 6 && (
-                  <div className="sessions-management">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <div>
-                        <h5 className="mb-1">
-                          <FaClock className="me-2 text-primary" />
-                          Course Sessions ({sessions.length})
-                        </h5>
-                        <small className="text-muted">
-                          Structure your course content with organized sessions
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-lg"
-                        onClick={addSession}
-                      >
-                        <FaPlus className="me-2" />
-                        Add New Session
-                      </button>
-                    </div>
+              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={handleCancel}
+                >
+                  <FaChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={() => handleStepSubmit({})}
+                >
+                  Next: Sessions
+                  <FaChevronRight className="w-4 h-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
 
-                    {sessions.length === 0 ? (
-                      <div className="text-center py-5">
-                        <div
-                          className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                          style={{ width: "80px", height: "80px" }}
-                        >
-                          <FaClock className="text-muted" size={40} />
-                        </div>
-                        <h6 className="mb-2">No sessions created yet</h6>
-                        <p className="text-muted mb-4">
-                          Start building your course by adding structured
-                          learning sessions
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={addSession}
-                        >
-                          <FaPlus className="me-2" />
-                          Create Your First Session
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <small className="text-muted">
-                            Total duration:{" "}
-                            {sessions.reduce(
-                              (total, session) =>
-                                total + (Number(session.duration) || 0),
-                              0
-                            )}{" "}
-                            minutes
-                          </small>
-                        </div>
-                        <div className="sessions-list">
-                          {sessions.map((session, index) => (
-                            <div
-                              key={index}
-                              className="card mb-3 border-start border-4 border-info"
-                            >
-                              <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-start">
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex align-items-center mb-2">
-                                      <span className="badge bg-info me-2">
-                                        Session {index + 1}
-                                      </span>
-                                      <h6 className="mb-0 fw-bold">
-                                        {session.title}
-                                      </h6>
-                                      <span className="badge bg-secondary ms-2">
-                                        {session.sessionType}
-                                      </span>
-                                      {session.isFree && (
-                                        <span className="badge bg-success ms-1">
-                                          Free
+          {/* Sessions Management Step */}
+          {currentStep === 6 && (
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                    <FaClock className="w-6 h-6 text-blue-600 mr-3" />
+                    Course Sessions ({sessions.length})
+                  </h3>
+                  <p className="text-gray-600 mt-2">
+                    Structure your course content with organized sessions and
+                    schedules
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={() => setShowSessionForm(true)}
+                >
+                  <FaPlus className="w-4 h-4 mr-2" />
+                  Add Session
+                </button>
+              </div>
+
+              {sessions.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                  <FaClock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                    No sessions created yet
+                  </h4>
+                  <p className="text-gray-500 mb-4">
+                    Start building your course by adding structured learning
+                    sessions
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    onClick={() => setShowSessionForm(true)}
+                  >
+                    <FaPlus className="w-4 h-4 mr-2" />
+                    Create Your First Session
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {sessions.map((session, index) => (
+                    <div
+                      key={index}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-6">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-3">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                Session {index + 1}
+                              </span>
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 capitalize">
+                                {session.type}
+                              </span>
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                {session.seatsLeft} seats
+                              </span>
+                            </div>
+                            <h4 className="text-xl font-semibold text-gray-900 mb-2">
+                              {session.title}
+                            </h4>
+                            <p className="text-gray-600 mb-4">
+                              {session.description}
+                            </p>
+
+                            {session.timeBlocks.length > 0 && (
+                              <div className="mt-4">
+                                <h5 className="text-sm font-medium text-gray-700 mb-2">
+                                  Schedule:
+                                </h5>
+                                <div className="grid gap-2">
+                                  {session.timeBlocks.map(
+                                    (timeBlock, blockIndex) => (
+                                      <div
+                                        key={blockIndex}
+                                        className="flex items-center space-x-4 text-sm text-gray-600 bg-gray-50 rounded-lg p-3"
+                                      >
+                                        <FaCalendar className="w-4 h-4 text-gray-400" />
+                                        <span>
+                                          {timeBlock.startDate} to{" "}
+                                          {timeBlock.endDate}
                                         </span>
-                                      )}
-                                    </div>
-                                    {session.description && (
-                                      <p className="text-muted mb-2 ps-3">
-                                        {session.description}
-                                      </p>
-                                    )}
-                                    <div className="ps-3">
-                                      <div className="row">
-                                        <div className="col-md-4">
-                                          <small className="text-muted d-block">
-                                            <FaClock className="me-1" />
-                                            <strong>Duration:</strong>{" "}
-                                            {session.duration} min
-                                          </small>
-                                        </div>
-                                        {session.startTime &&
-                                          session.endTime && (
-                                            <div className="col-md-4">
-                                              <small className="text-muted d-block">
-                                                <strong>Time:</strong>{" "}
-                                                {session.startTime} -{" "}
-                                                {session.endTime}
-                                              </small>
-                                            </div>
-                                          )}
-                                        {session.dayGroup && (
-                                          <div className="col-md-4">
-                                            <small className="text-muted d-block">
-                                              <strong>Schedule:</strong>{" "}
-                                              {session.dayGroup}
-                                            </small>
-                                          </div>
-                                        )}
+                                        <FaClock className="w-4 h-4 text-gray-400" />
+                                        <span>
+                                          {timeBlock.startTime} -{" "}
+                                          {timeBlock.endTime}
+                                        </span>
+                                        <span className="text-gray-500">
+                                          ({timeBlock.timeZone})
+                                        </span>
                                       </div>
-                                      {(session.objectives?.length > 0 ||
-                                        session.materials?.length > 0) && (
-                                        <div className="mt-2">
-                                          {session.objectives?.length > 0 && (
-                                            <small className="text-muted d-block">
-                                              <strong>Objectives:</strong>{" "}
-                                              {session.objectives
-                                                .slice(0, 2)
-                                                .join(", ")}
-                                              {session.objectives.length > 2 &&
-                                                "..."}
-                                            </small>
-                                          )}
-                                          {session.materials?.length > 0 && (
-                                            <small className="text-muted d-block">
-                                              <strong>Materials:</strong>{" "}
-                                              {session.materials
-                                                .slice(0, 2)
-                                                .join(", ")}
-                                              {session.materials.length > 2 &&
-                                                "..."}
-                                            </small>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="btn-group">
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-primary btn-sm"
-                                      onClick={() => editSession(index)}
-                                      title="Edit Session"
-                                    >
-                                      <FaEdit />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-danger btn-sm"
-                                      onClick={() => deleteSession(index)}
-                                      title="Delete Session"
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  </div>
+                                    )
+                                  )}
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Session Form */}
-                    {showSessionForm && (
-                      <div className="card mt-4 border-info">
-                        <div className="card-header bg-info text-white">
-                          <h6 className="mb-0">
-                            {editingSessionIndex !== null
-                              ? "Edit Session"
-                              : "Add New Session"}
-                          </h6>
-                        </div>
-                        <div className="card-body">
-                          <SessionForm
-                            initialData={
-                              editingSessionIndex !== null
-                                ? sessions[editingSessionIndex]
-                                : undefined
-                            }
-                            onSave={saveSession}
-                            onCancel={() => setShowSessionForm(false)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="d-flex justify-content-between mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={handleCancel}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                          // For step 6 (Sessions), just move to next step since sessions are managed separately
-                          handleStepSubmit({});
-                        }}
-                      >
-                        Next Step
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* TimeTable Management Interface */}
-                {currentStep === 7 && (
-                  <div className="timetable-management">
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <div>
-                        <h5 className="mb-1">
-                          <FaCalendar className="me-2 text-primary" />
-                          Class Schedule ({timeTable.length})
-                        </h5>
-                        <small className="text-muted">
-                          Add class dates and time schedules for your course
-                        </small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-lg"
-                        onClick={addTimeTable}
-                      >
-                        <FaPlus className="me-2" />
-                        Add New Date
-                      </button>
-                    </div>
-
-                    {timeTable.length === 0 ? (
-                      <div className="text-center py-5">
-                        <div
-                          className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                          style={{ width: "80px", height: "80px" }}
-                        >
-                          <FaCalendar className="text-muted" size={40} />
-                        </div>
-                        <h6 className="mb-2">No class dates added yet</h6>
-                        <p className="text-muted mb-4">
-                          Start by adding class dates and schedules for your
-                          course
-                        </p>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={addTimeTable}
-                        >
-                          <FaPlus className="me-2" />
-                          Add Your First Date
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <small className="text-muted">
-                            {timeTable.length} class date
-                            {timeTable.length !== 1 ? "s" : ""} scheduled
-                          </small>
-                        </div>
-                        <div className="timetable-list">
-                          {timeTable.map((entry, index) => (
-                            <div
-                              key={index}
-                              className="card mb-3 border-start border-4 border-success"
+                            )}
+                          </div>
+                          <div className="flex space-x-2 ml-4">
+                            <button
+                              type="button"
+                              className="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onClick={() => handleSessionEdit(index)}
                             >
-                              <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-start">
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex align-items-center mb-2">
-                                      <span className="badge bg-success me-2">
-                                        Date {index + 1}
-                                      </span>
-                                      <h6 className="mb-0 fw-bold">
-                                        {new Date(
-                                          entry.date
-                                        ).toLocaleDateString("en-US", {
-                                          weekday: "long",
-                                          year: "numeric",
-                                          month: "long",
-                                          day: "numeric",
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </h6>
-                                    </div>
-                                    <div className="ps-4">
-                                      {entry.description && (
-                                        <p className="text-muted mb-1">
-                                          <strong>Description:</strong>{" "}
-                                          {entry.description}
-                                        </p>
-                                      )}
-                                      {entry.time && (
-                                        <p className="text-muted mb-0">
-                                          <strong>Time:</strong> {entry.time}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="btn-group">
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-primary btn-sm"
-                                      onClick={() => editTimeTable(index)}
-                                      title="Edit Date"
-                                    >
-                                      <FaEdit />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline-danger btn-sm"
-                                      onClick={() => deleteTimeTable(index)}
-                                      title="Delete Date"
-                                    >
-                                      <FaTrash />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex items-center p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                              onClick={() => handleSessionDelete(index)}
+                            >
+                              <FaTrash className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-                    {/* TimeTable Form */}
-                    {showTimeTableForm && (
-                      <div className="card mt-4 border-success">
-                        <div className="card-header bg-success text-white">
-                          <h6 className="mb-0">
-                            {editingTimeTableIndex !== null
-                              ? "Edit Class Date"
-                              : "Add New Class Date"}
-                          </h6>
-                        </div>
-                        <div className="card-body">
-                          <TimeTableForm
-                            initialData={
-                              editingTimeTableIndex !== null
-                                ? timeTable[editingTimeTableIndex]
-                                : undefined
-                            }
-                            onSave={saveTimeTable}
-                            onCancel={() => setShowTimeTableForm(false)}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="d-flex justify-content-between mt-4">
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary"
-                        onClick={handleCancel}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                          handleStepSubmit({});
+              {showSessionForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {editingSessionIndex !== null
+                          ? "Edit Session"
+                          : "Add New Session"}
+                      </h3>
+                    </div>
+                    <div className="p-6">
+                      <SessionForm
+                        initialData={
+                          editingSessionIndex !== null
+                            ? sessions[editingSessionIndex]
+                            : undefined
+                        }
+                        onSave={handleSessionSave}
+                        onCancel={() => {
+                          setShowSessionForm(false);
+                          setEditingSessionIndex(null);
                         }}
-                      >
-                        Next Step
-                      </button>
+                      />
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Regular Dynamic Form for other steps */}
-                {currentStep !== 5 &&
-                  currentStep !== 6 &&
-                  currentStep !== 7 && (
-                    <DynamicForm
-                      config={getFormConfig(currentStep)}
-                      initialData={isEditMode ? processedCourseData : {}}
-                      onSubmit={handleStepSubmit}
-                      onCancel={handleCancel}
-                      loading={isCreating || isUpdating}
-                    />
-                  )}
+              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={handleCancel}
+                >
+                  <FaChevronLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  onClick={() => handleStepSubmit({})}
+                >
+                  Next: Final Details
+                  <FaChevronRight className="w-4 h-4 ml-2" />
+                </button>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Regular Form Steps */}
+          {![5, 6].includes(currentStep) && (
+            <div className="p-6">
+              <DynamicForm
+                config={getFormConfig(currentStep)}
+                initialData={isEditMode ? processedCourseData : {}}
+                onSubmit={handleStepSubmit}
+                onCancel={handleCancel}
+                loading={isCreating || isUpdating}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -147,7 +147,6 @@ export default function UsersPage() {
       label: "Active",
       type: "select",
       options: [
-        { value: "", label: "All" },
         { value: "true", label: "Active" },
         { value: "false", label: "Inactive" },
       ],
@@ -157,7 +156,6 @@ export default function UsersPage() {
       label: "Deleted",
       type: "select",
       options: [
-        { value: "", label: "All" },
         { value: "true", label: "Deleted" },
         { value: "false", label: "Not Deleted" },
       ],
@@ -166,7 +164,7 @@ export default function UsersPage() {
       key: "role",
       label: "Role",
       type: "select",
-      options: [{ value: "", label: "All" }, ...roleOptions],
+      options: [...roleOptions],
     },
   ];
 
@@ -175,11 +173,13 @@ export default function UsersPage() {
     const shouldResetPage = filterKeys.some(
       (key) => key !== "page" && key !== "limit"
     );
+    const typedFilters = filters as Partial<typeof tableFilters>;
+
     setTableFilters((prev) => ({
       ...prev,
-      ...filters,
-      page: shouldResetPage ? 1 : filters.page ?? prev.page,
-      limit: filters.limit ?? prev.limit,
+      ...typedFilters,
+      page: shouldResetPage ? 1 : typedFilters.page ?? prev.page,
+      limit: typedFilters.limit ?? prev.limit,
     }));
   };
 
@@ -196,17 +196,19 @@ export default function UsersPage() {
 
   const handleViewUser = (user: UserRow) => {
     if (!user?.id) return;
-    router.push(`/dashboard/users/${user.id}`);
+    // router.push(`/dashboard/users/${user.id}`);
   };
 
   const handleEditUser = (user: UserRow) => {
     if (!user?.id) return;
-    router.push(`/dashboard/users/${user.id}`);
+    router.push(`/dashboard/users/edit/${user.id}`);
   };
 
   const handleDeleteUser = async (user: UserRow) => {
     if (!user?.id || isDeleting) return;
-    const confirmed = window.confirm("Are you sure you want to delete this user?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this user?"
+    );
     if (!confirmed) return;
     try {
       await deleteUser(user.id).unwrap();
@@ -229,28 +231,16 @@ export default function UsersPage() {
           filters={usersFilters}
           onFilterChange={handleUsersFilterChange}
           pagination={
-            apiResponse && apiResponse.totalItems
-              ? {
-                  total: apiResponse.totalItems,
-                  currentPage: apiResponse.currentPage ?? tableFilters.page,
-                  totalPages: apiResponse.totalPages ?? 1,
-                  pageSize: apiResponse.limit ?? tableFilters.limit,
-                  onPageChange: handlePageChange,
-                  onPageSizeChange: handleLimitChange,
-                  pageSizeOptions: [4, 10, 20, 50, 100],
-                }
-              : {
-                  total: users.length,
-                  currentPage: tableFilters.page,
-                  totalPages: Math.max(
-                    1,
-                    Math.ceil(users.length / tableFilters.limit)
-                  ),
-                  pageSize: tableFilters.limit,
-                  onPageChange: handlePageChange,
-                  onPageSizeChange: handleLimitChange,
-                  pageSizeOptions: [4, 10, 20, 50, 100],
-                }
+            apiResponse &&
+            apiResponse?.totalItems && {
+              total: apiResponse.totalItems,
+              currentPage: apiResponse.currentPage ?? tableFilters.page,
+              totalPages: apiResponse.totalPages ?? 1,
+              pageSize: apiResponse.limit ?? tableFilters.limit,
+              onPageChange: handlePageChange,
+              onPageSizeChange: handleLimitChange,
+              pageSizeOptions: [4, 10, 20, 50, 100],
+            }
           }
           emptyMessage="No users found"
           onAdd={handleAddUser}

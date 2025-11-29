@@ -58,7 +58,7 @@ export default function StripePaymentsTab() {
       sortable: true,
       render: (payment) => (
         <span className="text-blue-600 font-medium">
-          #{payment?.stripePaymentIntentId || payment?._id || "N/A"}
+          #{payment?.stripePaymentIntentId || payment?.id || "N/A"}
         </span>
       ),
     },
@@ -209,7 +209,7 @@ export default function StripePaymentsTab() {
     if (!selectedOrder || !actionType) return;
 
     // Validate that we have an ID
-    const orderId = selectedOrder._id || selectedOrder.id;
+    const orderId = selectedOrder.id || selectedOrder.id;
     if (!orderId) {
       toast.error("Invalid purchase order ID");
       console.error("Purchase order object:", selectedOrder);
@@ -257,7 +257,7 @@ export default function StripePaymentsTab() {
         searchPlaceholder="Search by payment ID, customer, or course..."
         searchKeys={[
           "stripePaymentIntentId",
-          "_id",
+          "id",
           "userId.firstName",
           "userId.lastName",
           "userId.email",
@@ -267,12 +267,12 @@ export default function StripePaymentsTab() {
         filters={paymentsFilters}
         onFilterChange={handlePaymentsFilterChange}
         pagination={
-          paymentsData?.pagination
+          paymentsData
             ? {
-                total: paymentsData.pagination.total,
-                currentPage: currentPage,
-                totalPages: paymentsData.pagination.totalPages,
-                pageSize: limit,
+                total: paymentsData.totalItems,
+                currentPage: paymentsData.currentPage,
+                totalPages: paymentsData.totalPages,
+                pageSize: paymentsData.limit,
                 onPageChange: setCurrentPage,
                 onPageSizeChange: setLimit,
                 pageSizeOptions: [10, 20, 50, 100],
@@ -327,7 +327,7 @@ export default function StripePaymentsTab() {
                         <p className="font-semibold text-gray-900">
                           {selectedOrder.orderId ||
                             selectedOrder.poNumber ||
-                            `#${selectedOrder._id?.slice(-8)}`}
+                            `#${selectedOrder.id?.slice(-8)}`}
                         </p>
                       </div>
                       <div>

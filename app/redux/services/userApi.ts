@@ -1,12 +1,13 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 
 import { baseQueryWithAuth } from "./api";
+import { User } from "../types";
 
 type UserQueryParams = Record<string, string | number | boolean | undefined>;
 type CreateUserPayload = Record<string, unknown>;
 type UpdateProfilePayload = {
   id: string | number;
-} & Record<string, unknown>;
+} & Record<string, User>;
 
 export const userAPI = createApi({
   reducerPath: "userAPI",
@@ -14,7 +15,7 @@ export const userAPI = createApi({
   tagTypes: ["Users"],
   endpoints: (builder) => ({
     // ✅ Create User
-    createUser: builder.mutation<unknown, CreateUserPayload>({
+    createUser: builder.mutation<User, CreateUserPayload>({
       query: (body) => ({
         url: "/users",
         method: "POST",
@@ -24,7 +25,7 @@ export const userAPI = createApi({
     }),
 
     // ✅ Get All Users
-    getUsers: builder.query<unknown, UserQueryParams | void>({
+    getUsers: builder.query<User, UserQueryParams | void>({
       query: (params: UserQueryParams = {}) => {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
@@ -44,12 +45,12 @@ export const userAPI = createApi({
     }),
 
     // ✅ Get One User by ID
-    getUserById: builder.query<unknown, string | number>({
+    getUserById: builder.query<User, string | number>({
       query: (id) => `/users/${id}`,
     }),
 
     // ✅ Update User
-    updateProfile: builder.mutation<unknown, UpdateProfilePayload>({
+    updateProfile: builder.mutation<User, UpdateProfilePayload>({
       query: ({ id, ...body }) => ({
         url: `/users/${id}`,
         method: "PATCH",
