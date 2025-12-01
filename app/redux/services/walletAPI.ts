@@ -20,15 +20,23 @@ type WalletMutationPayload = {
 export const walletAPI = createApi({
   reducerPath: "walletAPI",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["refetchTransactions , refetchwallet"],
+  tagTypes: [
+    "refetchTransactions , refetchwallet",
+    "refetchwallet",
+    "refetchTransactions",
+  ],
   endpoints: (builder) => ({
     getWallets: builder.query<unknown, WalletListArgs | void>({
-      query: ({ page = 1, pageSize = 10, sort = "asc" }: WalletListArgs = {}) => ({
+      query: ({
+        page = 1,
+        pageSize = 10,
+        sort = "asc",
+      }: WalletListArgs = {}) => ({
         url: "/wallets",
         method: "GET",
         params: { page, pageSize, sort },
       }),
-      providesTags: ["refetchwallet"],
+      providesTags: [{ type: "refetchwallet" }],
     }),
 
     getWalletById: builder.query<unknown, string>({
@@ -60,17 +68,16 @@ export const walletAPI = createApi({
       }),
     }),
 
-    getWalletWithDrawRequests: builder.mutation<
-      unknown,
-      WalletMutationPayload
-    >({
-      query: ({ id, payload }) => ({
-        url: `/transactions/${id}/updateWalletWithdrawRequest`,
-        method: "PATCH",
-        body: payload,
-      }),
-      invalidatesTags: ["refetchTransactions"],
-    }),
+    getWalletWithDrawRequests: builder.mutation<unknown, WalletMutationPayload>(
+      {
+        query: ({ id, payload }) => ({
+          url: `/transactions/${id}/updateWalletWithdrawRequest`,
+          method: "PATCH",
+          body: payload,
+        }),
+        invalidatesTags: [{ type: "refetchTransactions" }],
+      }
+    ),
 
     getWalletTransactions: builder.query<unknown, WalletTransactionsArgs>({
       query: ({ walletId, page = 1, pageSize = 10, sort = "asc" }) => ({
@@ -85,7 +92,11 @@ export const walletAPI = createApi({
       unknown,
       WalletListArgs | void
     >({
-      query: ({ page = 1, pageSize = 10, sort = "asc" }: WalletListArgs = {}) => ({
+      query: ({
+        page = 1,
+        pageSize = 10,
+        sort = "asc",
+      }: WalletListArgs = {}) => ({
         url: `/wallets/paymentRequests/transactions`,
         method: "GET",
         params: { page, pageSize, sort },
@@ -94,7 +105,11 @@ export const walletAPI = createApi({
     }),
 
     getOwnWalletTransactions: builder.query<unknown, WalletListArgs | void>({
-      query: ({ page = 1, pageSize = 10, sort = "asc" }: WalletListArgs = {}) => ({
+      query: ({
+        page = 1,
+        pageSize = 10,
+        sort = "asc",
+      }: WalletListArgs = {}) => ({
         url: `/wallets/getOwnWalletTransactions`,
         method: "GET",
         params: { page, pageSize, sort },

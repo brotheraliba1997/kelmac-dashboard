@@ -75,11 +75,11 @@ export default function ClassScheduleComponent({ findOne }: any) {
   //     setFormData({ ...formData, students: [...formData.students, ""] });
   //   };
 
-//   const handleStudentChange = (index: number, value: string) => {
-//     const updated = [...formData.students];
-//     updated[index] = value;
-//     setFormData({ ...formData, students: updated });
-//   };
+  //   const handleStudentChange = (index: number, value: string) => {
+  //     const updated = [...formData.students];
+  //     updated[index] = value;
+  //     setFormData({ ...formData, students: updated });
+  //   };
 
   const removeStudent = (index: number) => {
     const updated = [...formData.students];
@@ -90,7 +90,9 @@ export default function ClassScheduleComponent({ findOne }: any) {
   // ✅ Submit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await createClassSchedule(formData).unwrap();
+    await createClassSchedule(
+      formData as unknown as Record<string, unknown>
+    ).unwrap();
     router.push("/dashboard/class-schedule");
   };
 

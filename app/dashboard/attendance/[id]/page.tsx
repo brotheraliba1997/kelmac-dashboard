@@ -116,7 +116,16 @@ function AttendancePageSingleClass() {
 
       console.log("Attendance Payload:", payload);
 
-      await markBulkAttendance(payload).unwrap();
+      const fixedPayload = {
+        ...payload,
+        sessionId: String(payload.sessionId),
+        markedBy: String(payload.markedBy),
+        students: payload.students.map((s: any) => ({
+          studentId: String(s.studentId),
+          status: s.status === "present" ? "present" : "absent",
+        })) as { studentId: string; status: "present" | "absent" }[],
+      };
+      await markBulkAttendance(fixedPayload).unwrap();
       alert("Attendance marked successfully!");
       router.push("/dashboard/class-schedule");
     } catch (error: any) {
@@ -225,7 +234,7 @@ function AttendancePageSingleClass() {
                                   htmlFor={`student-${studentId}`}
                                 ></label>
                               </div>
-                              <div className="flex-grow-1">
+                              <div className="grow">
                                 <div className="fw-semibold">
                                   {studentName} {studentLastName}
                                 </div>

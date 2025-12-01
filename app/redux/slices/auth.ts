@@ -61,19 +61,21 @@ const slice = createSlice({
       .addMatcher(
         authAPI.endpoints.loginUser.matchFulfilled,
         (state, { payload }) => {
-          state.user = payload.user;
-          state.isAdmin = payload.user.role === "admin";
-          state.isStudent = payload.user.role === "student";
-          state.isInstructor = payload.user.role === "instructor";
-          state.token = payload.token;
-          localStorage.setItem("user", JSON.stringify(payload.user));
-          localStorage.setItem("token", JSON.stringify(payload.token));
+          const data = payload as { user: any; token?: string };
+          state.user = data.user;
+          state.isAdmin = data.user.role === "admin";
+          state.isStudent = data.user.role === "student";
+          state.isInstructor = data.user.role === "instructor";
+          state.token = data.token ?? null;
+          localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.setItem("token", JSON.stringify(data.token));
         }
       )
       .addMatcher(
         userAPI.endpoints.updateProfile.matchFulfilled,
         (state, { payload }) => {
-          state.user = { ...(state.user ?? {}), ...payload };
+          const data = payload as unknown as { user: any };
+          state.user = { ...(state.user ?? {}), ...data };
           localStorage.setItem("user", JSON.stringify(state.user));
         }
       )

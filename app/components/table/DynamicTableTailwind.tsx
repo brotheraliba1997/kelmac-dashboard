@@ -90,8 +90,7 @@ export default function DynamicTableTailwind<
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
-  const [filterValues, setFilterValues] =
-    useState<Record<string, unknown>>();
+  const [filterValues, setFilterValues] = useState<Record<string, unknown>>();
   const [showFilters, setShowFilters] = useState(false);
 
   // Handle sorting
@@ -150,7 +149,16 @@ export default function DynamicTableTailwind<
           if (itemValue === undefined || itemValue === null) return false;
           const itemValueString = itemValue.toString().toLowerCase();
           const filterValueString = value.toString().toLowerCase();
-          return itemValueString === filterValueString;
+          // Debug log for role filter
+          if (key === "role") {
+            // If role is an object, get id
+            const roleValue =
+              typeof itemValue === "object" && itemValue !== null
+                ? (itemValue as any)?.id
+                : itemValue;
+            return String(roleValue) === String(value);
+          }
+          return String(itemValue) === String(value);
         });
       }
     });

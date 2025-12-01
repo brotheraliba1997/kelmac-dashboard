@@ -1539,7 +1539,7 @@ export default function ImprovedDynamicCourseForm({
                             >
                               <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-start">
-                                  <div className="flex-grow-1">
+                                  <div className="grow">
                                     <div className="d-flex align-items-center mb-2">
                                       <span className="badge bg-primary me-2">
                                         Q{index + 1}
@@ -1694,7 +1694,7 @@ export default function ImprovedDynamicCourseForm({
                             >
                               <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-start">
-                                  <div className="flex-grow-1">
+                                  <div className="grow">
                                     <div className="d-flex align-items-center mb-2">
                                       <span className="badge bg-info me-2">
                                         Session {index + 1}

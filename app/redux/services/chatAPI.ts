@@ -18,7 +18,6 @@ export const chatAPI = createApi({
         url: `/chats/all`,
         method: "GET",
       }),
-      invalidatesTags: ["refetchChatRoom"],
     }),
 
     getChatMessage: builder.mutation<unknown, ChatIdArg>({

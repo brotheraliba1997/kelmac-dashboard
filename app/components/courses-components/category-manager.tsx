@@ -186,9 +186,7 @@ export default function CategoryManager({
   };
 
   // Extract categories from API response
-  const categories = Array.isArray(categoriesData)
-    ? categoriesData
-    : categoriesData?.data || categoriesData?.categories || [];
+  const categories: any[] = Array.isArray(categoriesData) ? categoriesData : [];
 
   const WrapperComponent = embedded
     ? React.Fragment

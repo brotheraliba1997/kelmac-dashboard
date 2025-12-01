@@ -18,7 +18,7 @@ type UpdatePaymentDetailsArgs = {
 export const PaymentDetailsAPI = createApi({
   reducerPath: "PaymentDetailsAPI",
   baseQuery: baseQueryWithAuth, // Set default base query to the one with auth headers
-  tagTypes: ["refetchClientsPayment"],
+  tagTypes: ["refetchClientsPayment", "refetchClientsPaymentDetails"],
   endpoints: (builder) => ({
     paymentDetails: builder.mutation<unknown, ClientPaymentPayload>({
       query: (payload) => ({
@@ -26,7 +26,7 @@ export const PaymentDetailsAPI = createApi({
         method: "POST",
         body: { ...payload },
       }),
-      invalidatesTags: ["refetchClientsPaymentDetails"],
+      invalidatesTags: [{ type: "refetchClientsPaymentDetails" }],
     }),
 
     getClientPaymentDetails: builder.query<

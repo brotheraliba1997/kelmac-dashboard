@@ -82,7 +82,8 @@ const slice = createSlice({
         chatAPI.endpoints.getAllChats.matchFulfilled,
         (state, { payload }) => {
           state.isLoading = false;
-          state.chats = payload.data;
+          const data = payload as unknown as { data: any };
+          state.chats = data.data;
         }
       )
       .addMatcher(chatAPI.endpoints.getChatMessage.matchPending, (state) => {
@@ -91,7 +92,8 @@ const slice = createSlice({
       .addMatcher(
         chatAPI.endpoints.getChatMessage.matchFulfilled,
         (state, { payload }) => {
-          state.messages = payload.data;
+          const data = payload as unknown as { data: any };
+          state.messages = data.data;
         }
       )
       .addMatcher(chatAPI.endpoints.getChatMessage.matchRejected, (state) => {

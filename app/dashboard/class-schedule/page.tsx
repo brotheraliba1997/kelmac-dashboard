@@ -10,7 +10,7 @@ import { SiGoogleclassroom } from "react-icons/si";
 function ClassSchedule() {
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, error } = useGetAllClassSchedulesQuery({});
+  const { data, isLoading, error } = useGetAllClassSchedulesQuery();
 
   console.log("Class Schedule Data:", data);
 

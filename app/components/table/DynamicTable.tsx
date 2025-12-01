@@ -218,7 +218,7 @@ export default function DynamicTable<T extends Record<string, any>>({
             <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
               {/* Search Input */}
               {searchable && searchKeys.length > 0 && (
-                <div className="flex-grow-1" style={{ maxWidth: "400px" }}>
+                <div className="grow" style={{ maxWidth: "400px" }}>
                   <div className="input-group">
                     <span className="input-group-text bg-white">
                       <FaSearch className="text-muted" />

@@ -28,14 +28,15 @@ export const NotificationAPI = createApi({
       //   currentCache.data.push(...newItems.data);
       // },
 
-
       merge: (currentCache, newItems) => {
+        const cache = currentCache as { page: number; data: any[] };
+        const items = newItems as { page: number; data: any[] };
         if (
-          currentCache.page !== newItems.page
+          cache.page !== items.page
           // &&
-          // currentCache.pageSize !== newItems.pageSize
+          // cache.pageSize !== items.pageSize
         )
-          currentCache.data.push(...newItems.data);
+          cache.data.push(...items.data);
       },
       // Refetch when the page arg changes
       forceRefetch({ currentArg, previousArg }) {
@@ -48,7 +49,6 @@ export const NotificationAPI = createApi({
         url: `/notifications/${id}/read`,
         method: "PATCH",
       }),
-  
     }),
   }),
 });

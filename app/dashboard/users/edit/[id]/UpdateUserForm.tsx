@@ -141,7 +141,7 @@ const userFormConfig: DynamicFormConfig = {
 export default function UpdateUserForm() {
   const router = useRouter();
   const params = useParams();
-  const userId = params?.id;
+  const userId = Array.isArray(params?.id) ? params.id[0] : params?.id ?? "";
   const { data, isLoading: loadingUser } = useGetUserByIdQuery(userId);
   const [updateUser, { isLoading }] = useUpdateProfileMutation();
   const [message, setMessage] = useState("");
@@ -153,8 +153,14 @@ export default function UpdateUserForm() {
         firstName: data.firstName || "",
         lastName: data.lastName || "",
         email: data.email || "",
-        role: data.role?.id || data.role || "",
-        status: data.status?.id || data.status || "",
+        role:
+          typeof data.role === "object" && data.role !== null
+            ? data.role.id
+            : data.role || "",
+        status:
+          typeof data.status === "object" && data.status !== null
+            ? data.status.id
+            : data.status || "",
         provider: data.provider || "email",
         socialId: data.socialId || "",
         phoneNumber: data.phoneNumber || "",
@@ -172,14 +178,12 @@ export default function UpdateUserForm() {
     // Convert role/status to object form for API
     const payload = {
       ...formData,
-      role: { id: Number(formData.role) },
-      status: { id: Number(formData.status) },
       id: userId,
       phoneNumber: Number(formData.phoneNumber),
       ...(formData.password ? { password: formData.password } : {}),
     };
     try {
-      await updateUser(payload).unwrap();
+      await updateUser(payload as any).unwrap();
       setMessage("✅ User updated successfully!");
       router.push("/dashboard/users");
     } catch (error: any) {

@@ -247,7 +247,11 @@ export default function StripePaymentsTab() {
   return (
     <>
       <DynamicTable
-        data={paymentsData?.data || []}
+        data={
+          Array.isArray(paymentsData)
+            ? paymentsData
+            : (paymentsData as any)?.data || []
+        }
         columns={paymentsColumns}
         loading={paymentsLoading}
         error={
@@ -269,10 +273,10 @@ export default function StripePaymentsTab() {
         pagination={
           paymentsData
             ? {
-                total: paymentsData.totalItems,
-                currentPage: paymentsData.currentPage,
-                totalPages: paymentsData.totalPages,
-                pageSize: paymentsData.limit,
+                total: (paymentsData as any).totalItems,
+                currentPage: (paymentsData as any).currentPage,
+                totalPages: (paymentsData as any).totalPages,
+                pageSize: (paymentsData as any).limit,
                 onPageChange: setCurrentPage,
                 onPageSizeChange: setLimit,
                 pageSizeOptions: [10, 20, 50, 100],

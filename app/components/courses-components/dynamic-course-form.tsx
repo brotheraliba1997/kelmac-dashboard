@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import DynamicForm, { DynamicFormConfig } from "../shared/DynamicForm";
+import DynamicForm, {
+  DynamicFormConfig,
+  FieldType,
+} from "../shared/DynamicForm";
 import {
   FaBook,
   FaUser,
@@ -1116,26 +1119,26 @@ export default function DynamicCourseForm({
           {
             name: "title",
             label: "Course Title",
-            type: "text",
+            type: "text" as FieldType,
             validation: { required: true },
             icon: <FaBook />,
           },
           {
             name: "slug",
             label: "Course Slug",
-            type: "text",
+            type: "text" as FieldType,
             description: "URL-friendly version (auto-generated if empty)",
           },
           {
             name: "subtitle",
             label: "Subtitle",
-            type: "text",
+            type: "text" as FieldType,
             description: "Brief description that appears in listings",
           },
           {
             name: "instructor",
             label: "Instructor",
-            type: "select",
+            type: "select" as FieldType,
             validation: { required: true },
             options: instructorOptions,
             icon: <FaUser />,
@@ -1143,7 +1146,7 @@ export default function DynamicCourseForm({
           {
             name: "category",
             label: "Category",
-            type: "select",
+            type: "select" as FieldType,
             validation: { required: true },
             options: categoryOptions,
             icon: <FaTag />,
@@ -1151,7 +1154,7 @@ export default function DynamicCourseForm({
           {
             name: "description",
             label: "Course Description",
-            type: "textarea",
+            type: "textarea" as FieldType,
             validation: { required: true },
             description: "Detailed overview of what students will learn",
           },
@@ -1167,27 +1170,27 @@ export default function DynamicCourseForm({
           {
             name: "overview",
             label: "Course Overview",
-            type: "textarea",
+            type: "textarea" as FieldType,
             description: "Comprehensive overview of course content",
           },
           {
             name: "thumbnailUrl",
             label: "Thumbnail URL",
-            type: "url",
+            type: "text" as FieldType,
             icon: <FaImage />,
             description: "Course preview image",
           },
           {
             name: "previewVideoUrl",
             label: "Preview Video URL",
-            type: "url",
+            type: "text" as FieldType,
             icon: <FaVideo />,
             description: "Course introduction video",
           },
           {
             name: "subcategories",
             label: "Subcategories",
-            type: "text",
+            type: "text" as FieldType,
             description: "Comma-separated subcategories",
             validation: {
               custom: (value: string) => {
@@ -1201,7 +1204,7 @@ export default function DynamicCourseForm({
           {
             name: "topics",
             label: "Course Topics",
-            type: "text",
+            type: "text" as FieldType,
             description: "Comma-separated topics covered",
             validation: {
               custom: (value: string) => {
@@ -1224,7 +1227,7 @@ export default function DynamicCourseForm({
           {
             name: "skillLevel",
             label: "Skill Level",
-            type: "select",
+            type: "select" as FieldType,
             validation: { required: true },
             options: Object.values(SkillLevelEnum).map((level) => ({
               value: level,
@@ -1234,31 +1237,31 @@ export default function DynamicCourseForm({
           {
             name: "language",
             label: "Course Language",
-            type: "text",
+            type: "text" as FieldType,
             validation: { required: true },
             icon: <FaGlobe />,
           },
           {
             name: "captionsLanguage",
             label: "Captions Language",
-            type: "text",
+            type: "text" as FieldType,
           },
           {
             name: "certificate",
             label: "Certificate Available",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
             defaultValue: true,
           },
           {
             name: "lifetimeAccess",
             label: "Lifetime Access",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
             defaultValue: true,
           },
           {
             name: "mobileAccess",
             label: "Mobile Access",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
             defaultValue: true,
           },
         ],
@@ -1273,7 +1276,7 @@ export default function DynamicCourseForm({
           {
             name: "price",
             label: "Course Price",
-            type: "number",
+            type: "number" as FieldType,
             validation: {
               required: true,
               custom: validatePrice,
@@ -1284,7 +1287,7 @@ export default function DynamicCourseForm({
           {
             name: "currency",
             label: "Currency",
-            type: "select",
+            type: "select" as FieldType,
             validation: { required: true },
             options: Object.values(CurrencyEnum).map((currency) => ({
               value: currency,
@@ -1294,7 +1297,7 @@ export default function DynamicCourseForm({
           {
             name: "discountedPrice",
             label: "Discounted Price",
-            type: "number",
+            type: "number" as FieldType,
             validation: {
               custom: (value: any, formData: any) =>
                 validateDiscountedPrice(value, Number(formData.price)),
@@ -1304,7 +1307,7 @@ export default function DynamicCourseForm({
           {
             name: "discountPercentage",
             label: "Discount Percentage",
-            type: "number",
+            type: "number" as FieldType,
             validation: {
               custom: validateDiscountPercentage,
             },
@@ -1313,22 +1316,22 @@ export default function DynamicCourseForm({
           {
             name: "isPublished",
             label: "Publish Course",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
           },
           {
             name: "isFeatured",
             label: "Featured Course",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
           },
           {
             name: "isBestseller",
             label: "Bestseller",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
           },
           {
             name: "isNew",
             label: "New Course",
-            type: "checkbox",
+            type: "checkbox" as FieldType,
           },
         ],
       },
@@ -1342,7 +1345,7 @@ export default function DynamicCourseForm({
           {
             name: "faqManagement",
             label: "Frequently Asked Questions",
-            type: "text",
+            type: "text" as FieldType,
           },
         ],
       },
@@ -1353,7 +1356,11 @@ export default function DynamicCourseForm({
         submitText: "Next: Final Details",
         cancelText: "Previous",
         fields: [
-          { name: "sessionManagement", label: "Course Sessions", type: "text" },
+          {
+            name: "sessionManagement",
+            label: "Course Sessions",
+            type: "text" as FieldType,
+          },
         ],
       },
       7: {
@@ -1366,26 +1373,26 @@ export default function DynamicCourseForm({
           {
             name: "whatYouWillLearn",
             label: "What You Will Learn",
-            type: "textarea",
+            type: "textarea" as FieldType,
             validation: { required: true },
             description: "One learning objective per line",
           },
           {
             name: "requirements",
             label: "Requirements",
-            type: "textarea",
+            type: "textarea" as FieldType,
             description: "One requirement per line",
           },
           {
             name: "targetAudience",
             label: "Target Audience",
-            type: "textarea",
+            type: "textarea" as FieldType,
             description: "One audience segment per line",
           },
           {
             name: "features",
             label: "Course Features",
-            type: "textarea",
+            type: "textarea" as FieldType,
             description: "One feature per line",
           },
         ],
@@ -1393,9 +1400,16 @@ export default function DynamicCourseForm({
     };
 
     return (
-      stepConfigs[step as keyof typeof stepConfigs] || {
-        ...baseConfig,
+      stepConfigs[step as keyof typeof stepConfigs] ?? {
         fields: [],
+        title: "",
+        description: "",
+        submitText: "",
+        cancelText: "",
+        layout: "vertical",
+        columns: 2,
+        showProgress: false,
+        groupFields: false,
       }
     );
   };
@@ -1568,7 +1582,7 @@ export default function DynamicCourseForm({
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-start space-x-3">
-                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-medium flex-shrink-0 mt-0.5">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-sm font-medium shrink-0 mt-0.5">
                               Q
                             </span>
                             <div className="flex-1">
@@ -1576,7 +1590,7 @@ export default function DynamicCourseForm({
                                 {faq.question}
                               </h4>
                               <div className="flex items-start space-x-3">
-                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-sm font-medium flex-shrink-0">
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-sm font-medium shrink-0">
                                   A
                                 </span>
                                 <p className="text-gray-700 leading-relaxed">

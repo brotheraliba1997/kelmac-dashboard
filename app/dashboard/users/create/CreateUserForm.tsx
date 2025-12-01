@@ -174,7 +174,6 @@ export default function CreateUserForm() {
                   onSubmit={handleSubmit}
                   loading={isLoading}
                   initialData={formState}
-                  onChange={handleFormChange}
                 />
                 {message && (
                   <div

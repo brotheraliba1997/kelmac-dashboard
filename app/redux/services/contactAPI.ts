@@ -24,7 +24,7 @@ export const contactAPI = createApi({
         pageSize = 10,
         sort = "asc",
         status = "Verified",
-      }) => ({
+      } = {}) => ({
         url: "/contact",
         method: "GET",
         params: { page, pageSize, sort, status },

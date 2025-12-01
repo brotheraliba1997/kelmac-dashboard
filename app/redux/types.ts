@@ -11,7 +11,21 @@ export interface User {
   socialId?: string;
   [key: string]: any;
 }
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  slug: string;
+  icon: string;
+  color: string;
+  subcategories: string[];
+  courseCount: number;
+  order: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+}
 
+// Pagination structure for users
 export interface UserPagination {
   currentPage: number;
   data: User[];

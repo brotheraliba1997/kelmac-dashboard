@@ -1,5 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
+import { Category } from "../types";
 
 // Types for category API
 interface CategoryFilters {
@@ -16,7 +17,7 @@ export const categoryApi = createApi({
   tagTypes: ["Category"],
   endpoints: (builder) => ({
     // Get all categories with pagination and filters
-    getCategories: builder.query<unknown, CategoryFilters | void>({
+    getCategories: builder.query<Category[], CategoryFilters | void>({
       query: ({
         page = 1,
         limit = 10,
@@ -37,13 +38,13 @@ export const categoryApi = createApi({
     }),
 
     // Get category by ID
-    getCategoryById: builder.query<unknown, string>({
+    getCategoryById: builder.query<Category, string>({
       query: (id: string) => `/categories/${id}`,
       providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
     // Create new category
-    createCategory: builder.mutation<unknown, Record<string, unknown>>({
+    createCategory: builder.mutation<Category, Record<string, unknown>>({
       query: (data) => ({
         url: "/categories",
         method: "POST",
@@ -54,7 +55,7 @@ export const categoryApi = createApi({
 
     // Update category
     updateCategory: builder.mutation<
-      unknown,
+      Category,
       { id: string; data: Record<string, unknown> }
     >({
       query: ({ id, data }) => ({
@@ -69,7 +70,7 @@ export const categoryApi = createApi({
     }),
 
     // Delete category
-    deleteCategory: builder.mutation<unknown, string>({
+    deleteCategory: builder.mutation<Category, string>({
       query: (id) => ({
         url: `/categories/${id}`,
         method: "DELETE",
@@ -81,7 +82,7 @@ export const categoryApi = createApi({
     }),
 
     // Toggle category active status
-    toggleCategoryStatus: builder.mutation<unknown, string>({
+    toggleCategoryStatus: builder.mutation<Category, string>({
       query: (id) => ({
         url: `/categories/${id}/toggle-status`,
         method: "PATCH",
@@ -93,7 +94,7 @@ export const categoryApi = createApi({
     }),
 
     // Toggle category featured status
-    toggleCategoryFeatured: builder.mutation<unknown, string>({
+    toggleCategoryFeatured: builder.mutation<Category, string>({
       query: (id) => ({
         url: `/categories/${id}/toggle-featured`,
         method: "PATCH",
@@ -105,13 +106,13 @@ export const categoryApi = createApi({
     }),
 
     // Get featured categories
-    getFeaturedCategories: builder.query<unknown, void>({
+    getFeaturedCategories: builder.query<Category[], void>({
       query: () => "/categories/featured",
       providesTags: ["Category"],
     }),
 
     // Search categories
-    searchCategories: builder.query<unknown, string>({
+    searchCategories: builder.query<Category, string>({
       query: (searchTerm) => {
         const params = new URLSearchParams({
           search: searchTerm,

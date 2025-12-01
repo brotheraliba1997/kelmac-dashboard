@@ -29,7 +29,9 @@ export const JobAPI = createApi({
   tagTypes: [
     "refetchJobs",
     "refetchJobsContracts",
-    "refetchJobPost, refetchJobProposals",
+    "refetchJobPost",
+    "refetchJobProposals",
+    "refetchJobsPosts",
   ],
   endpoints: (builder) => ({
     createJobPost: builder.mutation<unknown, Record<string, unknown>>({
@@ -71,12 +73,14 @@ export const JobAPI = createApi({
       },
       // Always merge incoming data to the cache entry
       merge: (currentCache, newItems) => {
+        const cache = currentCache as { page: number; data: any[] };
+        const items = newItems as { page: number; data: any[] };
         if (
-          currentCache.page !== newItems.page
+          cache.page !== items.page
           // &&
-          // currentCache.pageSize !== newItems.pageSize
+          // cache.pageSize !== items.pageSize
         )
-          currentCache.data.push(...newItems.data);
+          cache.data.push(...items.data);
       },
       // Refetch when the page arg changes
       forceRefetch({ currentArg, previousArg }) {
@@ -89,7 +93,7 @@ export const JobAPI = createApi({
         url: `/jobPosts/${id}`,
         method: "GET",
       }),
-      providesTags: ["refetchJobPost"],
+      providesTags: [{ type: "refetchJobPost" }],
     }),
 
     sendJobProposal: builder.mutation<unknown, JobProposalPayload>({
@@ -107,7 +111,7 @@ export const JobAPI = createApi({
         method: "GET",
         params: { page, pageSize, sort, role: "client" },
       }),
-      providesTags: ["refetchJobProposals"],
+      providesTags: [{ type: "refetchJobProposals" }],
     }),
 
     acceptJobProposal: builder.mutation<unknown, string>({
