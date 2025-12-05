@@ -26,6 +26,7 @@ import { enrollmentApi } from "./services/enrollmentApi";
 import { classScheduleApi } from "./services/classScheduleApi";
 import { attendanceApi } from "./services/attendanceApi";
 import { categoryApi } from "./services/categoryApi";
+import { locationApi } from "./services/locationApi";
 
 export const store = configureStore({
   reducer: {
@@ -54,6 +55,7 @@ export const store = configureStore({
     [classScheduleApi.reducerPath]: classScheduleApi.reducer,
     [attendanceApi.reducerPath]: attendanceApi.reducer,
     [categoryApi.reducerPath]: categoryApi.reducer,
+    [locationApi.reducerPath]: locationApi.reducer,
     [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
@@ -77,6 +79,7 @@ export const store = configureStore({
       classScheduleApi.middleware,
       attendanceApi.middleware,
       categoryApi.middleware,
+      locationApi.middleware,
       purchaseOrderApi.middleware
     ),
 });

@@ -26,6 +26,8 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { useGetUsersQuery } from "../../redux/services/userApi";
+import { useGetLocationsQuery } from "../../redux/services/locationApi";
+import SearchableSelect from "../shared/SearchableSelect";
 import {
   useCreateCourseMutation,
   useUpdateCourseMutation,
@@ -76,12 +78,13 @@ export interface FAQ {
 
 export interface Session {
   id?: string;
-  title: string;
-  description: string;
   seatsLeft: number;
+  instructor: string;
+  order?: number;
+  location?: string; // now always an id or value from select
+  mode: SessionModeEnum;
   type: SessionTypeEnum;
   timeBlocks: TimeBlock[];
-  order: number;
 }
 
 export interface TimeBlock {
@@ -97,7 +100,10 @@ export enum SessionTypeEnum {
   SPLIT_WEEK = "Split Week",
   WEEKEND = "Weekend",
   EVENING = "Evening",
-  WEEKEND_PER_DAY = "Weekend Per Day", // Keeping for backward compatibility
+}
+export enum SessionModeEnum {
+  ONLINE = "online",
+  IN_PERSON = "in-person",
 }
 
 export enum SkillLevelEnum {
@@ -194,9 +200,7 @@ const validateFormData = (
   // Required fields validation
   if (!data.title?.trim()) errors.push("Course title is required");
   if (!data.description?.trim()) errors.push("Course description is required");
-  if (!data.instructor?.trim() || !isValidObjectId(data.instructor)) {
-    errors.push("Valid instructor must be selected");
-  }
+  // Instructor validation removed as per requirements
   if (!data.category || !isValidObjectId(data.category)) {
     errors.push("Valid category must be selected");
   }
@@ -259,11 +263,11 @@ const validateFormData = (
 };
 
 // ===== FORM COMPONENTS =====
-const FaqForm: React.FC<{
+const FaqForm = React.memo<{
   initialData?: FAQ;
   onSave: (data: FAQ) => void;
   onCancel: () => void;
-}> = ({ initialData, onSave, onCancel }) => {
+}>(({ initialData, onSave, onCancel }) => {
   const [formData, setFormData] = useState<FAQ>({
     question: initialData?.question || "",
     answer: initialData?.answer || "",
@@ -359,19 +363,18 @@ const FaqForm: React.FC<{
       </div>
     </form>
   );
-};
+});
 
-const TimeBlockForm: React.FC<{
+FaqForm.displayName = "FaqForm";
+
+const TimeBlockForm = React.memo<{
   initialData?: TimeBlock;
   onSave: (data: TimeBlock) => void;
   onCancel: () => void;
-}> = ({ initialData, onSave, onCancel }) => {
+}>(({ initialData, onSave, onCancel }) => {
   const [formData, setFormData] = useState<TimeBlock>({
-    startDate: initialData?.startDate || "",
-    endDate: initialData?.endDate || "",
-    startTime: initialData?.startTime || "09:00",
-    endTime: initialData?.endTime || "16:00",
-    timeZone: initialData?.timeZone || "Eastern Time (GMT-5)",
+    ...DEFAULT_TIME_BLOCK,
+    ...initialData,
   });
 
   const handleChange = (
@@ -477,11 +480,11 @@ const TimeBlockForm: React.FC<{
           onChange={handleChange}
           required
         >
-          <option value="Eastern Time (GMT-5)">Eastern Time (GMT-5)</option>
-          <option value="Central Time (GMT-6)">Central Time (GMT-6)</option>
-          <option value="Pacific Time (GMT-8)">Pacific Time (GMT-8)</option>
-          <option value="GMT">GMT</option>
-          <option value="UTC">UTC</option>
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>
+              {tz}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -502,20 +505,23 @@ const TimeBlockForm: React.FC<{
       </div>
     </form>
   );
-};
+});
 
-const SessionForm: React.FC<{
+TimeBlockForm.displayName = "TimeBlockForm";
+
+const SessionForm = React.memo<{
   initialData?: Session;
   onSave: (data: Session) => void;
   onCancel: () => void;
-}> = ({ initialData, onSave, onCancel }) => {
+}>(({ initialData, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Session>({
-    title: initialData?.title || "",
-    description: initialData?.description || "",
-    seatsLeft: initialData?.seatsLeft || 0,
+    seatsLeft: initialData?.seatsLeft ?? 1,
+    instructor: initialData?.instructor || "",
+    mode: initialData?.mode || SessionModeEnum.ONLINE,
     type: initialData?.type || SessionTypeEnum.FULL_WEEK,
     timeBlocks: initialData?.timeBlocks || [],
     order: initialData?.order || 0,
+    location: initialData?.location || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -542,14 +548,12 @@ const SessionForm: React.FC<{
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = "Session title is required";
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = "Session description is required";
-    }
-    if (formData.seatsLeft < 0) {
-      newErrors.seatsLeft = "Seats available must not be less than 0";
+    // Removed title and description validation
+    const seatsValue = Number(formData.seatsLeft);
+    if (Number.isNaN(seatsValue)) {
+      newErrors.seatsLeft = "Seats available is required";
+    } else if (seatsValue <= 0) {
+      newErrors.seatsLeft = "Seats available must be greater than 0";
     }
     if (
       !Object.values(SessionTypeEnum).includes(formData.type as SessionTypeEnum)
@@ -598,82 +602,179 @@ const SessionForm: React.FC<{
       toast.error("At least one time block is required");
       return;
     }
-    onSave(formData);
+
+    // Validate location: require a MongoDB id if provided
+    if (formData.location && !isValidObjectId(String(formData.location))) {
+      toast.error(
+        "Selected location is missing an id. Please select another location."
+      );
+      return;
+    }
+
+    const sessionData = {
+      ...formData,
+      location: formData.location || undefined,
+      seatsLeft: Number(formData.seatsLeft) || 0,
+    };
+
+    onSave(sessionData);
+  };
+
+  // Pagination state for location
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationPage, setLocationPage] = useState(1);
+
+  // Pagination state for instructor
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const [instructorPage, setInstructorPage] = useState(1);
+
+  // Fetch instructors (role: 3 = instructor)
+  const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({
+    role: 3,
+    search: instructorSearch,
+    page: instructorPage,
+    limit: 10,
+  });
+
+  const instructorOptions = React.useMemo(() => {
+    if (!usersData) return [];
+    const data = Array.isArray((usersData as any).data)
+      ? (usersData as any).data
+      : Array.isArray(usersData)
+      ? usersData
+      : (usersData as any).users || [];
+    return data.map((instructor: any) => ({
+      value: instructor.id,
+      label: `${instructor.firstName} ${instructor.lastName} (${instructor.email})`,
+    }));
+  }, [usersData]);
+
+  // Fetch locations
+  const { data: locationsData, isLoading: locationsLoading } =
+    useGetLocationsQuery({
+      search: locationSearch,
+      page: locationPage,
+      limit: 10,
+    });
+
+  const locationOptions = React.useMemo(() => {
+    if (!locationsData?.data) return [];
+    return locationsData.data.map((loc: any) => ({
+      value: loc._id || loc.id || loc.countryCode,
+      label: `${loc.country} (${loc.countryCode})${
+        loc._id || loc.id ? "" : " — id missing"
+      }`,
+      disabled: !(loc._id || loc.id),
+    }));
+  }, [locationsData]);
+
+  const handleLocationSearch = (search: string, page: number) => {
+    setLocationSearch(search);
+    setLocationPage(page);
+  };
+
+  // Clear invalid location selection if the selected option lacks an id
+  // useEffect(() => {
+  //   const selected = locationOptions.find(
+  //     (opt) => opt.value === formData.location
+  //   );
+  //   if (selected && selected.disabled) {
+  //     setFormData((prev) => ({ ...prev, location: "" }));
+  //     toast.warn(
+  //       "Selected location is missing an id. Please choose another location."
+  //     );
+  //   }
+  // }, [locationOptions, formData.location]);
+
+  const handleInstructorSearch = (search: string, page: number) => {
+    setInstructorSearch(search);
+    setInstructorPage(page);
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="title"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Session Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.title ? "border-red-500" : "border-gray-300"
-              }`}
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-            />
-            {errors.title && (
-              <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="seatsLeft"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Seats Available <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.seatsLeft ? "border-red-500" : "border-gray-300"
-              }`}
-              id="seatsLeft"
-              name="seatsLeft"
-              value={formData.seatsLeft}
-              onChange={handleChange}
-              min="0"
-              required
-            />
-            {errors.seatsLeft && (
-              <p className="mt-1 text-sm text-red-600">{errors.seatsLeft}</p>
-            )}
-          </div>
+        {/* Instructor Select with Search */}
+        <SearchableSelect
+          label="Instructor"
+          value={formData.instructor}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, instructor: String(value) }))
+          }
+          onSearch={handleInstructorSearch}
+          options={instructorOptions}
+          placeholder="Search and select instructor..."
+          loading={usersLoading}
+          hasMore={(usersData as any)?.hasNextPage || false}
+          currentPage={(usersData as any)?.currentPage || 1}
+          totalPages={(usersData as any)?.totalPages || 1}
+          className="mb-4"
+        />
+        {/* Location Select with Search */}
+        <SearchableSelect
+          label="Location (Optional)"
+          value={formData.location || ""}
+          onChange={(value) =>
+            setFormData((prev) => ({
+              ...prev,
+              location: String(value) || undefined,
+            }))
+          }
+          onSearch={handleLocationSearch}
+          options={locationOptions}
+          placeholder="Search and select location..."
+          loading={locationsLoading}
+          hasMore={locationsData?.hasNextPage || false}
+          currentPage={locationsData?.currentPage || 1}
+          totalPages={locationsData?.totalPages || 1}
+          className="mb-4"
+        />
+
+        {/* Mode Select Dropdown */}
+        <div>
+          <label className="block font-medium mb-1">
+            Mode <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="mode"
+            value={formData.mode}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          >
+            {Object.values(SessionModeEnum).map((mode) => (
+              <option key={mode} value={mode}>
+                {mode}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label
-            htmlFor="description"
+            htmlFor="seatsLeft"
             className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Description <span className="text-red-500">*</span>
+            Seats Limit <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <input
+            type="number"
             className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.description ? "border-red-500" : "border-gray-300"
+              errors.seatsLeft ? "border-red-500" : "border-gray-300"
             }`}
-            id="description"
-            name="description"
-            rows={3}
-            value={formData.description}
+            id="seatsLeft"
+            name="seatsLeft"
+            value={formData.seatsLeft}
             onChange={handleChange}
+            min="0"
             required
           />
-          {errors.description && (
-            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+          {errors.seatsLeft && (
+            <p className="mt-1 text-sm text-red-600">{errors.seatsLeft}</p>
           )}
         </div>
+
+        {/* Removed description field */}
 
         <div>
           <label
@@ -842,14 +943,33 @@ const SessionForm: React.FC<{
       )}
     </div>
   );
+});
+
+SessionForm.displayName = "SessionForm";
+
+// ===== CONSTANTS =====
+const TIMEZONES = [
+  "Eastern Time (GMT-5)",
+  "Central Time (GMT-6)",
+  "Pacific Time (GMT-8)",
+  "GMT",
+  "UTC",
+];
+
+const DEFAULT_TIME_BLOCK: TimeBlock = {
+  startDate: "",
+  endDate: "",
+  startTime: "09:00",
+  endTime: "16:00",
+  timeZone: "Eastern Time (GMT-5)",
 };
 
 // ===== STEP PROGRESS COMPONENT =====
-const StepProgress: React.FC<{
+const StepProgress = React.memo<{
   currentStep: number;
   totalSteps: number;
   steps: { number: number; title: string; icon: React.ReactNode }[];
-}> = ({ currentStep, totalSteps, steps }) => {
+}>(({ currentStep, totalSteps, steps }) => {
   return (
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
@@ -907,7 +1027,9 @@ const StepProgress: React.FC<{
       </div>
     </div>
   );
-};
+});
+
+StepProgress.displayName = "StepProgress";
 
 // ===== MAIN COMPONENT =====
 export default function DynamicCourseForm({
@@ -917,13 +1039,33 @@ export default function DynamicCourseForm({
   const router = useRouter();
   const isEditMode = mode === "edit";
 
-  const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 7;
+  const formStorageKey = `course_form_${mode}_${courseId || "new"}`;
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [accumulatedFormData, setAccumulatedFormData] = useState<
     Record<string, any>
-  >({});
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  >(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(formStorageKey);
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
+  const [sessions, setSessions] = useState<Session[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`${formStorageKey}_sessions`);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  const [faqs, setFaqs] = useState<FAQ[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(`${formStorageKey}_faqs`);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [showFaqForm, setShowFaqForm] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState<number | null>(
@@ -959,18 +1101,10 @@ export default function DynamicCourseForm({
     skip: !isEditMode || !courseId,
   });
 
-  // Fetch instructors and categories
-  const { data: usersData } = useGetUsersQuery({ role: 3 });
+  // Fetch categories (only needed for form options)
   const { data: categoriesData } = useGetCategoriesQuery({ isActive: true });
 
   // Process data for forms
-  const instructors = useMemo(() => {
-    if (!usersData) return [];
-    return Array.isArray(usersData)
-      ? usersData
-      : (usersData as any)?.data || (usersData as any)?.users || [];
-  }, [usersData]);
-
   const categories = useMemo(() => {
     if (!categoriesData) return [];
     return Array.isArray(categoriesData)
@@ -980,17 +1114,10 @@ export default function DynamicCourseForm({
           [];
   }, [categoriesData]);
 
-  const instructorOptions = useMemo(
-    () => [
-      { value: "", label: "-- Select an Instructor --", disabled: true },
-      ...instructors.map((instructor: any) => ({
-        value: instructor.id || instructor._id,
-        label: `${instructor.firstName || "Unknown"} ${
-          instructor.lastName || ""
-        } (${instructor.email})`.trim(),
-      })),
-    ],
-    [instructors]
+  // Memoize empty instructor options to avoid recreating on every render
+  const emptyInstructorOptions = useMemo(
+    () => [{ value: "", label: "-- Select an Instructor --", disabled: true }],
+    []
   );
 
   const categoryOptions = useMemo(
@@ -1004,7 +1131,7 @@ export default function DynamicCourseForm({
 
   // Initialize form data for edit mode
   const processedCourseData = useMemo(() => {
-    if (!isEditMode || !courseData) return {};
+    if (!isEditMode || !courseData) return {} as Record<string, any>;
     const course = courseData as any;
 
     return {
@@ -1012,7 +1139,7 @@ export default function DynamicCourseForm({
       slug: course?.slug || "",
       subtitle: course?.subtitle || "",
       description: course?.description || "",
-      instructor: course?.instructor?.id || course?.instructor,
+      // instructor: course?.instructor?.id || course?.instructor,
       overview: course?.overview || "",
       thumbnailUrl: course?.thumbnailUrl || "",
       previewVideoUrl: course?.previewVideoUrl || "",
@@ -1044,61 +1171,105 @@ export default function DynamicCourseForm({
   useEffect(() => {
     if (isEditMode && courseData) {
       const course = courseData as any;
-      if (course?.sessions) setSessions(course.sessions);
+      if (course?.sessions)
+        setSessions(
+          course.sessions.map((s: any, index: number) => ({
+            ...s,
+            instructor: s.instructor?.id || s.instructor,
+            location: s.location?.id || s.location,
+          }))
+        );
       if (course?.faqs) setFaqs(course.faqs);
     }
   }, [isEditMode, courseData]);
 
-  // Session management
-  const handleSessionSave = (sessionData: Session) => {
-    if (editingSessionIndex !== null) {
-      const updatedSessions = [...sessions];
-      updatedSessions[editingSessionIndex] = {
-        ...sessionData,
-        order: editingSessionIndex,
-      };
-      setSessions(updatedSessions);
-    } else {
-      setSessions((prev) => [...prev, { ...sessionData, order: prev.length }]);
+  // Persist form data to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(formStorageKey, JSON.stringify(accumulatedFormData));
     }
-    setShowSessionForm(false);
-    setEditingSessionIndex(null);
-  };
+  }, [accumulatedFormData, formStorageKey]);
 
-  const handleSessionEdit = (index: number) => {
+  // Persist sessions to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        `${formStorageKey}_sessions`,
+        JSON.stringify(sessions)
+      );
+    }
+  }, [sessions, formStorageKey]);
+
+  // Persist FAQs to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`${formStorageKey}_faqs`, JSON.stringify(faqs));
+    }
+  }, [faqs, formStorageKey]);
+
+  // Session management
+  const handleSessionSave = useCallback(
+    (sessionData: Session) => {
+      setSessions((prevSessions) => {
+        if (editingSessionIndex !== null) {
+          const updatedSessions = [...prevSessions];
+          updatedSessions[editingSessionIndex] = {
+            ...sessionData,
+            order: editingSessionIndex,
+          };
+          return updatedSessions;
+        } else {
+          return [
+            ...prevSessions,
+            { ...sessionData, order: prevSessions.length },
+          ];
+        }
+      });
+      setShowSessionForm(false);
+      setEditingSessionIndex(null);
+    },
+    [editingSessionIndex]
+  );
+
+  const handleSessionEdit = useCallback((index: number) => {
     setEditingSessionIndex(index);
     setShowSessionForm(true);
-  };
+  }, []);
 
-  const handleSessionDelete = (index: number) => {
+  const handleSessionDelete = useCallback((index: number) => {
     if (confirm("Are you sure you want to delete this session?")) {
       setSessions((prev) => prev.filter((_, i) => i !== index));
     }
-  };
+  }, []);
 
   // FAQ management
-  const handleFaqSave = (faqData: FAQ) => {
-    if (editingFaqIndex !== null) {
-      const updatedFaqs = [...faqs];
-      updatedFaqs[editingFaqIndex] = faqData;
-      setFaqs(updatedFaqs);
-    } else {
-      setFaqs((prev) => [...prev, faqData]);
-    }
-    setShowFaqForm(false);
-    setEditingFaqIndex(null);
-  };
+  const handleFaqSave = useCallback(
+    (faqData: FAQ) => {
+      setFaqs((prevFaqs) => {
+        if (editingFaqIndex !== null) {
+          const updatedFaqs = [...prevFaqs];
+          updatedFaqs[editingFaqIndex] = faqData;
+          return updatedFaqs;
+        } else {
+          return [...prevFaqs, faqData];
+        }
+      });
+      setShowFaqForm(false);
+      setEditingFaqIndex(null);
+    },
+    [editingFaqIndex]
+  );
 
-  const handleFaqEdit = (index: number) => {
+  const handleFaqEdit = useCallback((index: number) => {
     setEditingFaqIndex(index);
     setShowFaqForm(true);
-  };
+  }, []);
 
-  const handleFaqDelete = (index: number) => {
+  const handleFaqDelete = useCallback((index: number) => {
     if (confirm("Are you sure you want to delete this FAQ?")) {
       setFaqs((prev) => prev.filter((_, i) => i !== index));
     }
-  };
+  }, []);
 
   // Form configuration with validation
   const getFormConfig = (step: number): DynamicFormConfig => {
@@ -1134,14 +1305,6 @@ export default function DynamicCourseForm({
             label: "Subtitle",
             type: "text" as FieldType,
             description: "Brief description that appears in listings",
-          },
-          {
-            name: "instructor",
-            label: "Instructor",
-            type: "select" as FieldType,
-            validation: { required: true },
-            options: instructorOptions,
-            icon: <FaUser />,
           },
           {
             name: "category",
@@ -1415,98 +1578,146 @@ export default function DynamicCourseForm({
   };
 
   // Form submission with comprehensive validation
-  const handleSubmit = async (data: Record<string, any>) => {
-    // Validate all form data before submission
-    const validationErrors = validateFormData(data, faqs, sessions);
+  const handleSubmit = useCallback(
+    async (data: Record<string, any>) => {
+      // Validate all form data before submission
+      const validationErrors = validateFormData(data, faqs, sessions);
 
-    if (validationErrors.length > 0) {
-      const errorMessage =
-        "Please fix the following errors:\n" + validationErrors.join("\n");
-      toast.error(errorMessage);
-      console.error("Validation errors:", validationErrors);
-      return;
-    }
-
-    try {
-      const processedData = {
-        ...data,
-        // Process array fields
-        subcategories: processArrayField(data.subcategories || []),
-        topics: processArrayField(data.topics || []),
-
-        snapshot: {
-          skillLevel: data.skillLevel,
-          language: data.language,
-          captionsLanguage: data.captionsLanguage,
-          certificate: data.certificate !== false,
-          lifetimeAccess: data.lifetimeAccess !== false,
-          mobileAccess: data.mobileAccess !== false,
-        },
-        details: {
-          whatYouWillLearn:
-            data.whatYouWillLearn
-              ?.split("\n")
-              .filter((s: string) => s.trim()) || [],
-          requirements:
-            data.requirements?.split("\n").filter((s: string) => s.trim()) ||
-            [],
-          targetAudience:
-            data.targetAudience?.split("\n").filter((s: string) => s.trim()) ||
-            [],
-          features:
-            data.features?.split("\n").filter((s: string) => s.trim()) || [],
-        },
-        faqs: faqs.filter((faq) => faq.question?.trim() && faq.answer?.trim()),
-        sessions: sessions.filter(
-          (session) => session.title?.trim() && session.description?.trim()
-        ),
-
-        // Ensure numeric fields are properly formatted
-        price: Number(data.price) || 0,
-        discountedPrice: data.discountedPrice
-          ? Number(data.discountedPrice)
-          : undefined,
-        discountPercentage: data.discountPercentage
-          ? Number(data.discountPercentage)
-          : undefined,
-      };
-
-      if (isEditMode && courseId) {
-        await updateCourse({ id: courseId, data: processedData }).unwrap();
-        toast.success("Course updated successfully!");
-      } else {
-        await createCourse(processedData).unwrap();
-        toast.success("Course created successfully!");
+      if (validationErrors.length > 0) {
+        const errorMessage =
+          "Please fix the following errors:\n" + validationErrors.join("\n");
+        toast.error(errorMessage);
+        console.error("Validation errors:", validationErrors);
+        return;
       }
 
-      router.push("/dashboard/courses");
-    } catch (error: any) {
-      const errorMessage =
-        error?.data?.message ||
-        error?.message ||
-        `Failed to ${isEditMode ? "update" : "create"} course.`;
-      toast.error(errorMessage);
-    }
-  };
+      try {
+        const processedData = {
+          ...data,
+          // Process array fields
+          subcategories: processArrayField(data.subcategories || []),
+          topics: processArrayField(data.topics || []),
 
-  const handleStepSubmit = (data: Record<string, any>) => {
-    const updatedFormData = { ...accumulatedFormData, ...data };
-    setAccumulatedFormData(updatedFormData);
+          snapshot: {
+            skillLevel: data.skillLevel,
+            language: data.language,
+            captionsLanguage: data.captionsLanguage,
+            certificate: data.certificate !== false,
+            lifetimeAccess: data.lifetimeAccess !== false,
+            mobileAccess: data.mobileAccess !== false,
+          },
+          details: {
+            whatYouWillLearn:
+              data.whatYouWillLearn
+                ?.split("\n")
+                .filter((s: string) => s.trim()) || [],
+            requirements:
+              data.requirements?.split("\n").filter((s: string) => s.trim()) ||
+              [],
+            targetAudience:
+              data.targetAudience
+                ?.split("\n")
+                .filter((s: string) => s.trim()) || [],
+            features:
+              data.features?.split("\n").filter((s: string) => s.trim()) || [],
+          },
+          faqs: faqs.filter(
+            (faq) => faq.question?.trim() && faq.answer?.trim()
+          ),
+          sessions,
 
-    if (currentStep === totalSteps) {
-      handleSubmit(updatedFormData);
-    } else {
-      setCurrentStep((prev) => prev + 1);
-    }
-  };
+          // Ensure numeric fields are properly formatted
+          price: Number(data.price) || 0,
+          discountedPrice: data.discountedPrice
+            ? Number(data.discountedPrice)
+            : undefined,
+          discountPercentage: data.discountPercentage
+            ? Number(data.discountPercentage)
+            : undefined,
+        };
 
-  const handleCancel = () => {
+        if (isEditMode && courseId) {
+          await updateCourse({ id: courseId, data: processedData }).unwrap();
+          toast.success("Course updated successfully!");
+        } else {
+          await createCourse(processedData).unwrap();
+          toast.success("Course created successfully!");
+        }
+
+        // Clear form data from localStorage on success
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(formStorageKey);
+          localStorage.removeItem(`${formStorageKey}_sessions`);
+          localStorage.removeItem(`${formStorageKey}_faqs`);
+        }
+
+        router.push("/dashboard/courses");
+      } catch (error: any) {
+        const errorMessage =
+          error?.data?.message ||
+          error?.message ||
+          `Failed to ${isEditMode ? "update" : "create"} course.`;
+        toast.error(errorMessage);
+      }
+    },
+    [
+      faqs,
+      sessions,
+      isEditMode,
+      courseId,
+      formStorageKey,
+      updateCourse,
+      createCourse,
+      router,
+    ]
+  );
+
+  const handleStepSubmit = useCallback(
+    (data: Record<string, any>) => {
+      const updatedFormData = { ...accumulatedFormData, ...data };
+      setAccumulatedFormData(updatedFormData);
+
+      if (currentStep === totalSteps) {
+        handleSubmit(updatedFormData);
+      } else {
+        setCurrentStep((prev) => prev + 1);
+      }
+    },
+    [accumulatedFormData, currentStep, totalSteps, handleSubmit]
+  );
+
+  const handleCancel = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
     } else {
-      router.back();
+      // Warn before losing data
+      const hasData =
+        Object.keys(accumulatedFormData).length > 0 ||
+        sessions.length > 0 ||
+        faqs.length > 0;
+      if (hasData) {
+        if (
+          confirm("You have unsaved changes. Are you sure you want to go back?")
+        ) {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(formStorageKey);
+            localStorage.removeItem(`${formStorageKey}_sessions`);
+            localStorage.removeItem(`${formStorageKey}_faqs`);
+          }
+          router.back();
+        }
+      } else {
+        router.back();
+      }
     }
-  };
+  }, [
+    currentStep,
+    router,
+    accumulatedFormData,
+    sessions,
+    faqs,
+    formStorageKey,
+  ]);
 
   // Loading state
   if (courseLoading) {
@@ -1734,10 +1945,10 @@ export default function DynamicCourseForm({
                               </span>
                             </div>
                             <h4 className="text-xl font-semibold text-gray-900 mb-2">
-                              {session.title}
+                              {/* Removed session.title (no longer exists) */}
                             </h4>
                             <p className="text-gray-600 mb-4">
-                              {session.description}
+                              {/* Removed session.description (no longer exists) */}
                             </p>
 
                             {session.timeBlocks.length > 0 && (
@@ -1849,7 +2060,11 @@ export default function DynamicCourseForm({
             <div className="p-6">
               <DynamicForm
                 config={getFormConfig(currentStep)}
-                initialData={isEditMode ? processedCourseData : {}}
+                initialData={
+                  isEditMode && currentStep === 1
+                    ? processedCourseData
+                    : accumulatedFormData
+                }
                 onSubmit={handleStepSubmit}
                 onCancel={handleCancel}
                 loading={isCreating || isUpdating}
