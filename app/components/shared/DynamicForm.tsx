@@ -238,9 +238,11 @@ export default function DynamicForm({
       name: field.name,
       disabled: isDisabled,
       readOnly: field.readonly,
-      className: `form-control ${fieldError ? "is-invalid" : ""} ${
-        field.className || ""
-      }`,
+      className: `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+        fieldError
+          ? "border-danger-500 focus:ring-danger-500"
+          : "border-gray-300"
+      } ${field.className || ""}`,
     };
 
     switch (field.type) {
@@ -316,9 +318,9 @@ export default function DynamicForm({
 
       case "radio":
         return (
-          <div className="d-flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             {field.options?.map((option, index) => (
-              <div key={index} className="form-check">
+              <div key={index} className="flex items-center">
                 <input
                   type="radio"
                   id={`${field.name}_${index}`}
@@ -326,11 +328,11 @@ export default function DynamicForm({
                   value={option.value}
                   checked={value === option.value}
                   disabled={isDisabled || option.disabled}
-                  className="form-check-input"
+                  className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500 disabled:opacity-50"
                   onChange={(e) => handleChange(field, e.target.value)}
                 />
                 <label
-                  className="form-check-label"
+                  className="ml-2 text-sm text-gray-700"
                   htmlFor={`${field.name}_${index}`}
                 >
                   {option.label}
@@ -344,9 +346,9 @@ export default function DynamicForm({
         if (field.options) {
           // Multiple checkboxes
           return (
-            <div className="d-flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
               {field.options.map((option, index) => (
-                <div key={index} className="form-check">
+                <div key={index} className="flex items-center">
                   <input
                     type="checkbox"
                     id={`${field.name}_${index}`}
@@ -355,7 +357,7 @@ export default function DynamicForm({
                       Array.isArray(value) && value.includes(option.value)
                     }
                     disabled={isDisabled || option.disabled}
-                    className="form-check-input"
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
                     onChange={(e) => {
                       const currentValues = Array.isArray(value) ? value : [];
                       const newValues = e.target.checked
@@ -365,7 +367,7 @@ export default function DynamicForm({
                     }}
                   />
                   <label
-                    className="form-check-label"
+                    className="ml-2 text-sm text-gray-700"
                     htmlFor={`${field.name}_${index}`}
                   >
                     {option.label}
@@ -377,17 +379,20 @@ export default function DynamicForm({
         } else {
           // Single checkbox
           return (
-            <div className="form-check">
+            <div className="flex items-center">
               <input
                 type="checkbox"
                 id={field.name}
                 name={field.name}
                 checked={!!value}
                 disabled={isDisabled}
-                className="form-check-input"
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
                 onChange={(e) => handleChange(field, e.target.checked)}
               />
-              <label className="form-check-label" htmlFor={field.name}>
+              <label
+                className="ml-2 text-sm text-gray-700"
+                htmlFor={field.name}
+              >
                 {field.description || field.label}
               </label>
             </div>
@@ -396,17 +401,18 @@ export default function DynamicForm({
 
       case "password":
         return (
-          <div className="input-group">
+          <div className="flex">
             <input
               {...commonProps}
               type={showPassword[field.name] ? "text" : "password"}
               value={value}
               placeholder={field.placeholder}
               onChange={(e) => handleChange(field, e.target.value)}
+              className="flex-1 px-3 py-2 border border-r-0 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100"
             />
             <button
               type="button"
-              className="btn btn-outline-secondary"
+              className="px-3 py-2 border border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
               onClick={() =>
                 setShowPassword((prev) => ({
                   ...prev,
@@ -421,7 +427,7 @@ export default function DynamicForm({
 
       case "file":
         return (
-          <div className="input-group">
+          <div className="flex">
             <input
               {...commonProps}
               type="file"
@@ -432,7 +438,10 @@ export default function DynamicForm({
                   : undefined
               }
             />
-            <label className="input-group-text" htmlFor={field.name}>
+            <label
+              className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 cursor-pointer"
+              htmlFor={field.name}
+            >
               <FaUpload />
             </label>
           </div>
@@ -448,10 +457,11 @@ export default function DynamicForm({
               min={field.validation?.min || 0}
               max={field.validation?.max || 100}
               onChange={(e) => handleChange(field, e.target.value)}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="d-flex justify-content-between text-muted small">
+            <div className="flex justify-between text-gray-500 text-sm mt-1">
               <span>{field.validation?.min || 0}</span>
-              <span className="fw-bold">{value}</span>
+              <span className="font-bold text-gray-900">{value}</span>
               <span>{field.validation?.max || 100}</span>
             </div>
           </div>
@@ -477,13 +487,13 @@ export default function DynamicForm({
     const columns = config.columns || 1;
     switch (columns) {
       case 2:
-        return "col-md-6";
+        return "md:w-1/2";
       case 3:
-        return "col-lg-4";
+        return "lg:w-1/3";
       case 4:
-        return "col-lg-3";
+        return "lg:w-1/4";
       default:
-        return "col-12";
+        return "w-full";
     }
   };
 
@@ -494,18 +504,18 @@ export default function DynamicForm({
     <div className={`dynamic-form ${className}`}>
       {config.title && (
         <div className="mb-4">
-          <h4 className="mb-2">{config.title}</h4>
+          <h4 className="text-xl font-semibold mb-2">{config.title}</h4>
           {config.description && (
-            <p className="text-muted mb-0">{config.description}</p>
+            <p className="text-gray-600 mb-0">{config.description}</p>
           )}
         </div>
       )}
 
       {config.showProgress && (
         <div className="mb-4">
-          <div className="progress" style={{ height: "6px" }}>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div
-              className="progress-bar bg-primary"
+              className="bg-primary-600 h-1.5 rounded-full transition-all duration-300"
               style={{
                 width: `${
                   (Object.keys(formData).filter((key) => formData[key]).length /
@@ -515,7 +525,7 @@ export default function DynamicForm({
               }}
             />
           </div>
-          <small className="text-muted">
+          <small className="text-gray-500 text-sm mt-1">
             {Object.keys(formData).filter((key) => formData[key]).length} of{" "}
             {visibleFields.length} fields completed
           </small>
@@ -524,8 +534,8 @@ export default function DynamicForm({
 
       <form onSubmit={handleSubmit}>
         <div
-          className={`row g-3 ${
-            config.layout === "inline" ? "align-items-end" : ""
+          className={`flex flex-wrap -mx-2 ${
+            config.layout === "inline" ? "items-end" : ""
           }`}
         >
           {config.fields.map((field) => {
@@ -534,16 +544,16 @@ export default function DynamicForm({
             const fieldError = localErrors[field.name] || errors[field.name];
 
             return (
-              <div key={field.name} className={getColumnClass()}>
+              <div key={field.name} className={`px-2 mb-4 ${getColumnClass()}`}>
                 {field.type !== "hidden" && field.type !== "checkbox" && (
                   <label
                     htmlFor={field.name}
-                    className="form-label d-flex align-items-center"
+                    className="flex items-center text-sm font-medium text-gray-700 mb-1"
                   >
-                    {field.icon && <span className="me-2">{field.icon}</span>}
+                    {field.icon && <span className="mr-2">{field.icon}</span>}
                     {field.label}
                     {field.validation?.required && (
-                      <span className="text-danger ms-1">*</span>
+                      <span className="text-danger-500 ml-1">*</span>
                     )}
                   </label>
                 )}
@@ -551,46 +561,48 @@ export default function DynamicForm({
                 {renderField(field)}
 
                 {fieldError && (
-                  <div className="invalid-feedback d-block">{fieldError}</div>
+                  <div className="text-danger-600 text-sm mt-1">
+                    {fieldError}
+                  </div>
                 )}
 
                 {field.description && field.type !== "checkbox" && (
-                  <div className="form-text">{field.description}</div>
+                  <div className="text-gray-500 text-sm mt-1">
+                    {field.description}
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="row mt-4">
-          <div className="col-12">
-            <div className="d-flex gap-3 justify-content-end">
-              {onCancel && (
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={onCancel}
-                  disabled={isSubmitting}
-                >
-                  <FaTimes className="me-1" />
-                  {config.cancelText || "Cancel"}
-                </button>
-              )}
+        <div className="mt-6 w-full">
+          <div className="flex gap-3 items-center">
+            {onCancel && (
               <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSubmitting || loading}
+                type="button"
+                className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={onCancel}
+                disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <FaSpinner className="spinner-border spinner-border-sm me-2" />
-                    Submitting...
-                  </>
-                ) : (
-                  config.submitText || "Submit"
-                )}
+                <FaTimes className="w-4 h-4 mr-2" />
+                {config.cancelText || "Previous"}
               </button>
-            </div>
+            )}
+            <button
+              type="submit"
+              className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              disabled={isSubmitting || loading}
+            >
+              {isSubmitting ? (
+                <>
+                  <FaSpinner className="inline animate-spin mr-2" />
+                  Submitting...
+                </>
+              ) : (
+                config.submitText || "Submit"
+              )}
+            </button>
           </div>
         </div>
       </form>

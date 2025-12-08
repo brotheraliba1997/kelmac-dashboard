@@ -13,6 +13,7 @@ import {
 } from "@/app/redux/services/userApi";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 
 type UserRow = {
   id?: string | number;
@@ -73,27 +74,22 @@ export default function UsersPage() {
   const columns: Column<UserRow>[] = [
     {
       key: "firstName",
-      label: "Client",
+      label: "Name",
       render: (user) => (
-        <div className="d-flex align-items-center gap-2">
-          <div className="fw-semibold text-capitalize">
+        <div>
+          <div className="font-semibold text-gray-900 capitalize">
             {user?.firstName} {user?.lastName}
           </div>
+          <div className="text-sm text-gray-600">{user?.email}</div>
         </div>
       ),
-      sortable: true,
-    },
-    {
-      key: "email",
-      label: "Email",
-      render: (user) => <div className="text-lowercase">{user?.email}</div>,
       sortable: true,
     },
     {
       key: "role",
       label: "Role",
       render: (user) => (
-        <span className="badge bg-primary text-capitalize">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 capitalize">
           {GetUserRoleName(resolveRoleId(user?.role))}
         </span>
       ),
@@ -104,33 +100,58 @@ export default function UsersPage() {
       label: "Status",
       render: (user) => {
         const statusName = GetUserStatusName(resolveStatusId(user?.status));
+        let bgColor = "bg-gray-100";
+        let textColor = "text-gray-800";
+
+        if (statusName === "Active") {
+          bgColor = "bg-green-100";
+          textColor = "text-green-800";
+        } else if (statusName === "Blocked") {
+          bgColor = "bg-red-100";
+          textColor = "text-red-800";
+        } else if (statusName === "Pending") {
+          bgColor = "bg-amber-100";
+          textColor = "text-amber-800";
+        }
+
         return (
-          <>
-            {statusName === "Active" && (
-              <span className="badge bg-success text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "Blocked" && (
-              <span className="badge bg-danger text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "Pending" && (
-              <span className="badge bg-warning text-dark text-capitalize">
-                {statusName}
-              </span>
-            )}
-            {statusName === "unknown" && (
-              <span className="badge bg-secondary text-capitalize">
-                Unknown
-              </span>
-            )}
-          </>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} ${textColor} capitalize`}
+          >
+            {statusName}
+          </span>
         );
       },
       sortable: true,
     },
+    // {
+    //   key: "actions",
+    //   label: "Actions",
+    //   render: (user) => (
+    //     <div className="flex items-center gap-3">
+    //       <button
+    //         title="View"
+    //         className="text-primary-600 hover:text-primary-700"
+    //       >
+    //         <FaEye className="text-lg" />
+    //       </button>
+    //       <button
+    //         onClick={() => handleEditUser(user)}
+    //         title="Edit"
+    //         className="text-green-600 hover:text-green-700"
+    //       >
+    //         <FaEdit className="text-lg" />
+    //       </button>
+    //       <button
+    //         onClick={() => handleDeleteUser(user)}
+    //         title="Delete"
+    //         className="text-red-600 hover:text-red-700"
+    //       >
+    //         <FaTrash className="text-lg" />
+    //       </button>
+    //     </div>
+    //   ),
+    // },
   ];
   // Table filter configs
   const roleOptions = [

@@ -64,7 +64,9 @@ export default function CoursesPage() {
       key: "title",
       label: "Title",
       render: (course) => (
-        <div className="fw-semibold text-capitalize">{course?.title}</div>
+        <div className="font-semibold text-gray-900 capitalize">
+          {course?.title}
+        </div>
       ),
       sortable: true,
     },
@@ -73,7 +75,7 @@ export default function CoursesPage() {
       key: "description",
       label: "Description",
       render: (course) => (
-        <div className="text-muted text-truncate" style={{ maxWidth: "250px" }}>
+        <div className="text-gray-600 truncate" style={{ maxWidth: "250px" }}>
           {course?.description || "—"}
         </div>
       ),
@@ -84,7 +86,7 @@ export default function CoursesPage() {
       key: "instructor",
       label: "Instructor",
       render: (course) => (
-        <div className="fw-medium text-primary">
+        <div className="font-medium text-primary-600">
           {course?.instructor?.firstName
             ? `${course.instructor.firstName} ${course.instructor.lastName}`
             : "—"}
@@ -97,7 +99,7 @@ export default function CoursesPage() {
       key: "price",
       label: "Price",
       render: (course) => (
-        <span className="badge bg-info">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
           ${Number(course?.price || 0).toFixed(2)}
         </span>
       ),
@@ -108,7 +110,7 @@ export default function CoursesPage() {
       key: "sessions",
       label: "Sessions",
       render: (course) => (
-        <span className="badge bg-secondary">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
           {course?.sessions?.length || 0} Sessions
         </span>
       ),

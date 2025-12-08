@@ -1,0 +1,80 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: "#182e4b",
+          50: "#f0f4f9",
+          100: "#dde6f0",
+          200: "#c1cfe4",
+          300: "#a5b8d7",
+          400: "#3d506a",
+          500: "#2f435d",
+          600: "#182e4b",
+          700: "#0f1e31",
+          800: "#060f18",
+          900: "#030810",
+        },
+        secondary: {
+          DEFAULT: "#6488e6",
+          50: "#f3f5fb",
+          100: "#e8edf8",
+          200: "#d4dbf0",
+          300: "#c0c9e9",
+          400: "#a8b4e0",
+          500: "#9aa5d8",
+          600: "#6488e6",
+          700: "#5275cc",
+          800: "#3d5599",
+          900: "#2a3966",
+        },
+        accent: {
+          DEFAULT: "#e6cab0",
+          50: "#fdf9f5",
+          100: "#fdf2e8",
+          200: "#fce5d1",
+          300: "#fad9ba",
+          400: "#f6c79c",
+          500: "#f0b883",
+          600: "#e6cab0",
+          700: "#d4a989",
+          800: "#c28862",
+          900: "#8b5f45",
+        },
+        success: "#10b981",
+        danger: "#ef4444",
+        warning: "#f59e0b",
+        info: "#3b82f6",
+        body: "#636363",
+        light: "#fafafa",
+        lighter: "#f8f9fa",
+      },
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
+        inter: "var(--font-inter)",
+        inter_tight: "var(--font-inter-tight)",
+        hedvig: "var(--font-hedvig)",
+      },
+      fontSize: {
+        xs: "0.75rem",
+        sm: "0.875rem",
+        base: "1rem",
+        lg: "1.125rem",
+        xl: "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "1.875rem",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

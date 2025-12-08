@@ -1,138 +1,127 @@
 "use client";
-import React, { use, useEffect, useState } from "react";
-import Table from "@/app/components/table/index";
+import React, { useState } from "react";
+import DynamicTable from "@/app/components/table/DynamicTableTailwind";
 import Link from "next/link";
 
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { useGetAllClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
 import { SiGoogleclassroom } from "react-icons/si";
 
 function ClassSchedule() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, error } = useGetAllClassSchedulesQuery();
 
-  console.log("Class Schedule Data:", data);
-
-  const [pageSize, setPageSize] = useState(5);
-
-  const courses = (data as any)?.data || data || [];
-  const totalEntries = courses.length;
+  const schedules = (data as any)?.data || data || [];
+  const totalEntries = schedules.length;
   const totalPages = Math.ceil(totalEntries / pageSize);
 
   const indexOfLastItem = page * pageSize;
   const indexOfFirstItem = indexOfLastItem - pageSize;
-  const currentData = courses.slice(indexOfFirstItem, indexOfLastItem);
+  const currentData = schedules.slice(indexOfFirstItem, indexOfLastItem);
 
   const columns = [
     {
-      displayName: "Course",
-      displayField: (e: any) => (
-        <div className="fw-semibold text-capitalize">
-          {e?.course?.title || "—"}
+      key: "course",
+      label: "Course",
+      render: (item: any) => (
+        <div className="font-semibold text-gray-900 capitalize">
+          {item?.course?.title || "—"}
         </div>
       ),
-      searchable: true,
     },
-
     {
-      displayName: "Instructor",
-      displayField: (e: any) => (
-        <div className="fw-medium text-primary">
-          {e?.instructor?.firstName
-            ? `${e.instructor.firstName} ${e.instructor.lastName}`
+      key: "instructor",
+      label: "Instructor",
+      render: (item: any) => (
+        <div className="text-primary-600 font-medium">
+          {item?.instructor?.firstName
+            ? `${item.instructor.firstName} ${item.instructor.lastName}`
             : "—"}
         </div>
       ),
-      searchable: true,
     },
-
     {
-      displayName: "Date",
-      displayField: (e: any) => (
-        <span className="badge bg-light text-dark">{e?.date || "—"}</span>
+      key: "date",
+      label: "Date",
+      render: (item: any) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          {item?.date || "—"}
+        </span>
       ),
-      searchable: true,
     },
-
     {
-      displayName: "Time",
-      displayField: (e: any) => (
-        <span className="badge bg-info text-dark">{e?.time || "—"}</span>
+      key: "time",
+      label: "Time",
+      render: (item: any) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+          {item?.time || "—"}
+        </span>
       ),
-      searchable: true,
     },
-
     {
-      displayName: "Duration",
-      displayField: (e: any) => (
-        <span className="badge bg-secondary">{e?.duration || 0} min</span>
+      key: "duration",
+      label: "Duration",
+      render: (item: any) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500 text-white">
+          {item?.duration || 0} min
+        </span>
       ),
-      searchable: false,
     },
-
     {
-      displayName: "Meet Link",
-      displayField: (e: any) => (
+      key: "googleMeetLink",
+      label: "Meet Link",
+      render: (item: any) => (
         <a
-          href={e?.googleMeetLink}
+          href={item?.googleMeetLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-decoration-none text-primary fw-medium"
+          className="text-primary-600 hover:text-primary-700 font-medium underline"
         >
-          {e?.googleMeetLink ? "Join Meeting" : "—"}
+          {item?.googleMeetLink ? "Join Meeting" : "—"}
         </a>
       ),
-      searchable: false,
     },
-
     {
-      displayName: "Status",
-      displayField: (e: any) =>
-        e?.status === "scheduled" ? (
-          <span className="badge bg-success">Scheduled</span>
-        ) : e?.status === "cancelled" ? (
-          <span className="badge bg-danger">Cancelled</span>
-        ) : (
-          <span className="badge bg-warning text-dark">{e?.status || "—"}</span>
-        ),
-      searchable: true,
+      key: "status",
+      label: "Status",
+      render: (item: any) => {
+        let bgColor = "bg-gray-500";
+        if (item?.status === "scheduled") bgColor = "bg-green-500";
+        else if (item?.status === "cancelled") bgColor = "bg-red-500";
+        else if (item?.status === "completed") bgColor = "bg-blue-500";
+
+        return (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor} text-white`}
+          >
+            {item?.status?.charAt(0).toUpperCase() + item?.status?.slice(1) ||
+              "—"}
+          </span>
+        );
+      },
     },
-
     {
-      displayName: "Actions",
-      displayField: (e: any) => (
-        <div className="d-flex gap-3">
-          <Link href={`/dashboard/attendance/${e?.id}`}>
-            <SiGoogleclassroom
-              className="text-primary"
-              style={{ cursor: "pointer" }}
-              //   onClick={() => handleView?.(e)}
-              title="Attendance"
-            />
+      key: "actions",
+      label: "Actions",
+      render: (item: any) => (
+        <div className="flex items-center gap-3">
+          <Link href={`/dashboard/attendance/${item?.id}`} title="Attendance">
+            <SiGoogleclassroom className="text-primary-600 hover:text-primary-700 cursor-pointer text-lg" />
           </Link>
-
-          <FaEye
-            className="text-primary"
-            style={{ cursor: "pointer" }}
-            //   onClick={() => handleView?.(e)}
+          <button
             title="View"
-          />
-
-          <Link href={`/dashboard/class-schedule/${e?.id}`}>
-            <FaEdit
-              className="text-success"
-              style={{ cursor: "pointer" }}
-              title="Edit"
-            />
+            className="text-primary-600 hover:text-primary-700"
+          >
+            <FaEye className="text-lg" />
+          </button>
+          <Link href={`/dashboard/class-schedule/${item?.id}`} title="Edit">
+            <FaEdit className="text-green-600 hover:text-green-700 cursor-pointer text-lg" />
           </Link>
-
-          <FaTrash
-            className="text-danger"
-            style={{ cursor: "pointer" }}
-            //   onClick={() => handleDelete?.(e)}
-            title="Delete"
-          />
+          <button title="Delete" className="text-red-600 hover:text-red-700">
+            <FaTrash className="text-lg" />
+          </button>
         </div>
       ),
     },
@@ -141,53 +130,24 @@ function ClassSchedule() {
   return (
     <div className="page-wrapper" style={{ minHeight: 730 }}>
       <div className="content container-fluid">
-        <div className="row justify-content-center">
-          <div className="col-xl-12  col-12">
-            <div className="card-header py-3 bg-gradient">
-              <div className="row">
-                <div className="col">
-                  <h4 className="card-title">Class Schedule</h4>
-                </div>
-                <div className="col-auto">
-                  <Link
-                    href="/dashboard/class-schedule/create"
-                    className=" btn btn-dark btn-sm"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width={24}
-                      height={24}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="feather feather-plus me-2"
-                    >
-                      <line x1={12} y1={5} x2={12} y2={19} />
-                      <line x1={5} y1={12} x2={19} y2={12} />
-                    </svg>
-                    Add Schedule
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <Table
-              title="Class Schedule"
-              columns={columns}
-              dataSource={currentData}
-              isLoading={isLoading}
-              totalPages={totalPages}
-              totalEntries={totalEntries}
-              page={page}
-              setPage={setPage}
-              pageSize={pageSize}
-              setPageSize={setPageSize}
-            />
-          </div>
-        </div>
+        <DynamicTable
+          data={currentData}
+          columns={columns}
+          loading={isLoading}
+          pageTitle="Class Schedule"
+          error={error ? "Failed to load schedules" : null}
+          pagination={{
+            total: totalEntries,
+            currentPage: page,
+            totalPages: totalPages,
+            pageSize: pageSize,
+            onPageChange: setPage,
+            onPageSizeChange: setPageSize,
+            pageSizeOptions: [5, 10, 20, 50],
+          }}
+          onAdd={() => {}}
+          addButtonLabel="Add Schedule"
+        />
       </div>
     </div>
   );

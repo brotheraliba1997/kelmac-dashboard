@@ -1,5 +1,11 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query";
+import type {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+} from "@reduxjs/toolkit/query";
 import type { RootState } from "../store";
+import { logout } from "../slices/auth";
 
 // Base query function without authorization headers
 export const baseQueryWithoutAuth = fetchBaseQuery({
@@ -7,7 +13,7 @@ export const baseQueryWithoutAuth = fetchBaseQuery({
 });
 
 // Base query function with authorization headers
-export const baseQueryWithAuth = fetchBaseQuery({
+const baseQuery = fetchBaseQuery({
   baseUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL}`,
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
@@ -20,3 +26,28 @@ export const baseQueryWithAuth = fetchBaseQuery({
     return headers;
   },
 });
+
+// Enhanced base query with token expiration handling
+export const baseQueryWithAuth: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions);
+
+  // Check for 401 Unauthorized or 403 Forbidden (token expired/invalid)
+  if (
+    result.error &&
+    (result.error.status === 401 || result.error.status === 403)
+  ) {
+    // Dispatch logout action
+    api.dispatch(logout());
+
+    // Redirect to login page
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+  }
+
+  return result;
+};

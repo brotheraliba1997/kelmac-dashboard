@@ -10,7 +10,7 @@ import { FaCheck, FaTimes, FaFileInvoice } from "react-icons/fa";
 import DynamicTable, {
   Column,
   FilterConfig,
-} from "@/app/components/table/DynamicTableTailwind";
+} from "@/app/components/table/DynamicTable";
 
 export default function PurchaseOrdersTab() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -222,22 +222,28 @@ export default function PurchaseOrdersTab() {
       key: "actions",
       label: "Actions",
       render: (order) => (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-1.5">
           <button
-            className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group relative"
             onClick={() => handleOpenModal(order, "approve")}
             disabled={isUpdating || order.status !== "pending"}
-            title="Approve"
+            title="Approve Order"
           >
-            <FaCheck />
+            <FaCheck className="w-4 h-4" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Approve
+            </span>
           </button>
           <button
-            className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group relative"
             onClick={() => handleOpenModal(order, "reject")}
             disabled={isUpdating || order.status !== "pending"}
-            title="Reject"
+            title="Reject Order"
           >
-            <FaTimes />
+            <FaTimes className="w-4 h-4" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Reject
+            </span>
           </button>
         </div>
       ),
@@ -290,7 +296,6 @@ export default function PurchaseOrdersTab() {
           "course.title",
         ]}
         filters={purchaseOrdersFilters}
-        onFilterChange={handlePurchaseOrdersFilterChange}
         pagination={
           purchaseOrdersData?.pagination
             ? {

@@ -157,7 +157,7 @@ export default function DynamicTable<T extends Record<string, any>>({
       case "select":
         return (
           <select
-            className="form-select form-select-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             value={filterValues[filter.key] || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           >
@@ -174,7 +174,7 @@ export default function DynamicTable<T extends Record<string, any>>({
         return (
           <input
             type="date"
-            className="form-control form-control-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             value={filterValues[filter.key] || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           />
@@ -184,7 +184,7 @@ export default function DynamicTable<T extends Record<string, any>>({
         return (
           <input
             type="text"
-            className="form-control form-control-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             placeholder={filter.placeholder || `Filter by ${filter.label}`}
             value={filterValues[filter.key] || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
@@ -210,116 +210,114 @@ export default function DynamicTable<T extends Record<string, any>>({
   }
 
   return (
-    <div className={`dynamic-table-container ${className}`}>
+    <div
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}
+    >
       {/* Search and Filters Bar */}
       {(searchable || filters.length > 0) && (
-        <div className="row mb-3">
-          <div className="col-md-12">
-            <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
-              {/* Search Input */}
-              {searchable && searchKeys.length > 0 && (
-                <div className="grow" style={{ maxWidth: "400px" }}>
-                  <div className="input-group">
-                    <span className="input-group-text bg-white">
-                      <FaSearch className="text-muted" />
-                    </span>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder={searchPlaceholder}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                      <button
-                        className="btn btn-outline-secondary"
-                        type="button"
-                        onClick={() => setSearchTerm("")}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Filter Toggle Button */}
-              {filters.length > 0 && (
-                <div className="d-flex gap-2">
-                  <button
-                    className={`btn btn-outline-primary position-relative ${
-                      showFilters ? "active" : ""
-                    }`}
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <FaFilter className="me-2" />
-                    Filters
-                    {activeFiltersCount > 0 && (
-                      <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        {activeFiltersCount}
-                      </span>
-                    )}
-                  </button>
-                  {activeFiltersCount > 0 && (
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            {/* Search Input */}
+            {searchable && searchKeys.length > 0 && (
+              <div className="w-full md:w-96">
+                <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent">
+                  <FaSearch className="text-gray-400" />
+                  <input
+                    type="text"
+                    className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder-gray-500"
+                    placeholder={searchPlaceholder}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
                     <button
-                      className="btn btn-outline-secondary"
-                      onClick={clearFilters}
+                      className="text-gray-400 hover:text-gray-600 text-lg"
+                      type="button"
+                      onClick={() => setSearchTerm("")}
                     >
-                      Clear All
+                      ×
                     </button>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Page Size Selector */}
-              {pagination?.onPageSizeChange && (
-                <div className="d-flex align-items-center gap-2">
-                  <label className="mb-0 text-nowrap">Show:</label>
-                  <select
-                    className="form-select form-select-sm"
-                    style={{ width: "auto" }}
-                    value={pagination.pageSize}
-                    onChange={(e) =>
-                      pagination.onPageSizeChange?.(Number(e.target.value))
-                    }
+            {/* Filter Toggle Button */}
+            {filters.length > 0 && (
+              <div className="flex gap-2">
+                <button
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors ${
+                    showFilters
+                      ? "bg-primary-50 border-primary-300 text-primary-600"
+                      : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <FaFilter />
+                  Filters
+                  {activeFiltersCount > 0 && (
+                    <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
+                {activeFiltersCount > 0 && (
+                  <button
+                    className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                    onClick={clearFilters}
                   >
-                    {(pagination.pageSizeOptions || [10, 20, 50, 100]).map(
-                      (size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </div>
-              )}
-            </div>
+                    Clear All
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Page Size Selector */}
+            {pagination?.onPageSizeChange && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 font-medium">
+                  Show:
+                </label>
+                <select
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={pagination.pageSize}
+                  onChange={(e) =>
+                    pagination.onPageSizeChange?.(Number(e.target.value))
+                  }
+                >
+                  {(pagination.pageSizeOptions || [10, 20, 50, 100]).map(
+                    (size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    )
+                  )}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       )}
-
       {/* Filters Panel */}
       {showFilters && filters.length > 0 && (
-        <div className="card mb-3">
-          <div className="card-body">
-            <div className="row g-3">
-              {filters.map((filter) => (
-                <div key={filter.key} className="col-md-3 col-sm-6">
-                  <label className="form-label small fw-bold">
-                    {filter.label}
-                  </label>
-                  {renderFilterInput(filter)}
-                </div>
-              ))}
-            </div>
+        <div className="p-4 md:p-6 border-b border-gray-200 bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {filters.map((filter) => (
+              <div key={filter.key}>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {filter.label}
+                </label>
+                {renderFilterInput(filter)}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* Results Count */}
       {(searchTerm || activeFiltersCount > 0) && !loading && (
-        <div className="mb-2">
-          <small className="text-muted">
+        <div className="px-4 md:px-6 pt-4">
+          <small className="text-gray-600">
             Found {filteredData.length} result
             {filteredData.length !== 1 ? "s" : ""}
             {searchTerm && ` for "${searchTerm}"`}
@@ -328,31 +326,29 @@ export default function DynamicTable<T extends Record<string, any>>({
       )}
 
       {/* Table */}
-      <div className="table-responsive">
-        <table className="table table-hover table-center mb-0">
+      <div className="overflow-x-auto">
+        <table className="w-full">
           <thead>
-            <tr>
+            <tr className="border-b border-gray-200 bg-gray-50">
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`${column.className || ""} ${
-                    column.sortable ? "cursor-pointer user-select-none" : ""
+                  className={`px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700 ${
+                    column.className || ""
+                  } ${
+                    column.sortable ? "cursor-pointer hover:bg-gray-100" : ""
                   }`}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="flex items-center gap-2">
                     {column.label}
                     {column.sortable && (
-                      <span className="text-muted">
-                        {sortConfig?.key === column.key ? (
-                          sortConfig.direction === "asc" ? (
-                            <i className="bi bi-arrow-up"></i>
-                          ) : (
-                            <i className="bi bi-arrow-down"></i>
-                          )
-                        ) : (
-                          <i className="bi bi-arrow-down-up"></i>
-                        )}
+                      <span className="text-gray-400 text-xs">
+                        {sortConfig?.key === column.key
+                          ? sortConfig.direction === "asc"
+                            ? "↑"
+                            : "↓"
+                          : "↕"}
                       </span>
                     )}
                   </div>
@@ -363,11 +359,16 @@ export default function DynamicTable<T extends Record<string, any>>({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-5">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                <td
+                  colSpan={columns.length}
+                  className="px-4 md:px-6 py-12 text-center"
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-primary-600 rounded-full animate-spin"></div>
+                    <p className="mt-3 text-gray-600 text-sm">
+                      Loading data...
+                    </p>
                   </div>
-                  <p className="mt-2 text-muted">Loading data...</p>
                 </td>
               </tr>
             ) : filteredData.length > 0 ? (
@@ -375,12 +376,17 @@ export default function DynamicTable<T extends Record<string, any>>({
                 <tr
                   key={index}
                   onClick={() => onRowClick?.(item, index)}
-                  className={`${onRowClick ? "cursor-pointer" : ""} ${
-                    rowClassName?.(item, index) || ""
-                  }`}
+                  className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${
+                    onRowClick ? "cursor-pointer" : ""
+                  } ${rowClassName?.(item, index) || ""}`}
                 >
                   {columns.map((column) => (
-                    <td key={column.key} className={column.className || ""}>
+                    <td
+                      key={column.key}
+                      className={`px-4 md:px-6 py-4 text-sm text-gray-900 ${
+                        column.className || ""
+                      }`}
+                    >
                       {column.render
                         ? column.render(item, index)
                         : getNestedValue(item, column.key)}
@@ -390,9 +396,12 @@ export default function DynamicTable<T extends Record<string, any>>({
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="text-center py-5">
-                  <div className="text-muted">
-                    <i className="bi bi-inbox fs-1 d-block mb-3"></i>
+                <td
+                  colSpan={columns.length}
+                  className="px-4 md:px-6 py-12 text-center"
+                >
+                  <div className="text-gray-500">
+                    <div className="text-5xl mb-3">📭</div>
                     {emptyMessage}
                   </div>
                 </td>
@@ -404,162 +413,106 @@ export default function DynamicTable<T extends Record<string, any>>({
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && !loading && (
-        <div className="row mt-3">
-          <div className="col-md-12">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-              <div className="text-muted">
-                Showing{" "}
-                {Math.min(
-                  (pagination.currentPage - 1) * pagination.pageSize + 1,
-                  pagination.total
-                )}{" "}
-                to{" "}
-                {Math.min(
-                  pagination.currentPage * pagination.pageSize,
-                  pagination.total
-                )}{" "}
-                of {pagination.total} entries
-              </div>
-              <nav>
-                <ul className="pagination mb-0">
-                  {/* First Page */}
-                  <li
-                    className={`page-item ${
-                      pagination.currentPage === 1 ? "disabled" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => pagination.onPageChange(1)}
-                      disabled={pagination.currentPage === 1}
-                    >
-                      <i className="bi bi-chevron-double-left"></i>
-                    </button>
-                  </li>
-
-                  {/* Previous Page */}
-                  <li
-                    className={`page-item ${
-                      pagination.currentPage === 1 ? "disabled" : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        pagination.onPageChange(pagination.currentPage - 1)
-                      }
-                      disabled={pagination.currentPage === 1}
-                    >
-                      <FaChevronLeft />
-                    </button>
-                  </li>
-
-                  {/* Page Numbers */}
-                  {(() => {
-                    const pages = [];
-                    const maxVisible = 5;
-                    let start = Math.max(
-                      1,
-                      pagination.currentPage - Math.floor(maxVisible / 2)
-                    );
-                    let end = Math.min(
-                      pagination.totalPages,
-                      start + maxVisible - 1
-                    );
-
-                    if (end - start + 1 < maxVisible) {
-                      start = Math.max(1, end - maxVisible + 1);
-                    }
-
-                    for (let i = start; i <= end; i++) {
-                      pages.push(
-                        <li
-                          key={i}
-                          className={`page-item ${
-                            i === pagination.currentPage ? "active" : ""
-                          }`}
-                        >
-                          <button
-                            className="page-link"
-                            onClick={() => pagination.onPageChange(i)}
-                          >
-                            {i}
-                          </button>
-                        </li>
-                      );
-                    }
-                    return pages;
-                  })()}
-
-                  {/* Next Page */}
-                  <li
-                    className={`page-item ${
-                      pagination.currentPage === pagination.totalPages
-                        ? "disabled"
-                        : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        pagination.onPageChange(pagination.currentPage + 1)
-                      }
-                      disabled={
-                        pagination.currentPage === pagination.totalPages
-                      }
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </li>
-
-                  {/* Last Page */}
-                  <li
-                    className={`page-item ${
-                      pagination.currentPage === pagination.totalPages
-                        ? "disabled"
-                        : ""
-                    }`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        pagination.onPageChange(pagination.totalPages)
-                      }
-                      disabled={
-                        pagination.currentPage === pagination.totalPages
-                      }
-                    >
-                      <i className="bi bi-chevron-double-right"></i>
-                    </button>
-                  </li>
-                </ul>
-              </nav>
+        <div className="p-4 md:p-6 border-t border-gray-200">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-600">
+              Showing{" "}
+              {Math.min(
+                (pagination.currentPage - 1) * pagination.pageSize + 1,
+                pagination.total
+              )}{" "}
+              to{" "}
+              {Math.min(
+                pagination.currentPage * pagination.pageSize,
+                pagination.total
+              )}{" "}
+              of {pagination.total} entries
             </div>
+            <nav className="flex items-center gap-1">
+              {/* First Page */}
+              <button
+                onClick={() => pagination.onPageChange(1)}
+                disabled={pagination.currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First Page"
+              >
+                <FaChevronLeft className="w-4 h-4 mr-1 inline" />
+              </button>
+
+              {/* Previous Page */}
+              <button
+                onClick={() =>
+                  pagination.onPageChange(pagination.currentPage - 1)
+                }
+                disabled={pagination.currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous Page"
+              >
+                <FaChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {(() => {
+                  const pages = [];
+                  const maxVisible = 5;
+                  let start = Math.max(
+                    1,
+                    pagination.currentPage - Math.floor(maxVisible / 2)
+                  );
+                  let end = Math.min(
+                    pagination.totalPages,
+                    start + maxVisible - 1
+                  );
+
+                  if (end - start + 1 < maxVisible) {
+                    start = Math.max(1, end - maxVisible + 1);
+                  }
+
+                  for (let i = start; i <= end; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => pagination.onPageChange(i)}
+                        className={`w-10 h-10 rounded-lg border transition-colors ${
+                          i === pagination.currentPage
+                            ? "bg-primary-600 text-white border-primary-600"
+                            : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+                  return pages;
+                })()}
+              </div>
+
+              {/* Next Page */}
+              <button
+                onClick={() =>
+                  pagination.onPageChange(pagination.currentPage + 1)
+                }
+                disabled={pagination.currentPage === pagination.totalPages}
+                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next Page"
+              >
+                <FaChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Last Page */}
+              <button
+                onClick={() => pagination.onPageChange(pagination.totalPages)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last Page"
+              >
+                <FaChevronRight className="w-4 h-4 mr-1 inline" />
+              </button>
+            </nav>
           </div>
         </div>
       )}
     </div>
   );
-}
-
-// CSS for cursor pointer
-const styles = `
-  .cursor-pointer {
-    cursor: pointer;
-  }
-  
-  .cursor-pointer:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-  }
-  
-  .user-select-none {
-    user-select: none;
-  }
-`;
-
-// Inject styles
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
 }

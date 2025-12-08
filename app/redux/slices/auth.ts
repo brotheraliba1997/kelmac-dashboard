@@ -31,6 +31,7 @@ export type AuthState = {
   isStudent: boolean;
   isInstructor: boolean;
   isLoadingUser?: boolean;
+  isAuthenticated: boolean;
 };
 
 const initialState: AuthState = {
@@ -40,6 +41,7 @@ const initialState: AuthState = {
   isStudent: user?.role === "student",
   isInstructor: user?.role === "instructor",
   isLoadingUser: false,
+  isAuthenticated: !!token && !!user,
 };
 
 const slice = createSlice({
@@ -49,6 +51,10 @@ const slice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.isAuthenticated = false;
+      state.isAdmin = false;
+      state.isStudent = false;
+      state.isInstructor = false;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     },
@@ -67,6 +73,7 @@ const slice = createSlice({
           state.isStudent = data.user.role === "student";
           state.isInstructor = data.user.role === "instructor";
           state.token = data.token ?? null;
+          state.isAuthenticated = !!(data.token && data.user);
           localStorage.setItem("user", JSON.stringify(data.user));
           localStorage.setItem("token", JSON.stringify(data.token));
         }
@@ -82,6 +89,10 @@ const slice = createSlice({
       .addMatcher(authAPI.endpoints.loginUser.matchRejected, (state) => {
         state.user = null;
         state.token = null;
+        state.isAuthenticated = false;
+        state.isAdmin = false;
+        state.isStudent = false;
+        state.isInstructor = false;
       });
   },
 });

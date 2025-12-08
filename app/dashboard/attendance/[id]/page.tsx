@@ -138,16 +138,10 @@ function AttendancePageSingleClass() {
 
   if (isLoadingSchedule) {
     return (
-      <div className="page-wrapper" style={{ minHeight: 730 }}>
-        <div className="content container-fluid">
-          <div
-            className="d-flex justify-content-center align-items-center"
-            style={{ minHeight: "400px" }}
-          >
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+        <div className="flex items-center gap-3 text-gray-700">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-primary-500" />
+          <span className="font-medium">Loading class schedule…</span>
         </div>
       </div>
     );
@@ -155,12 +149,25 @@ function AttendancePageSingleClass() {
 
   if (scheduleError || !classSchedule) {
     return (
-      <div className="page-wrapper" style={{ minHeight: 730 }}>
-        <div className="content container-fluid">
-          <div className="alert alert-danger">
-            <h5>Error</h5>
-            <p>Class schedule not found or failed to load.</p>
-            <Link href="/dashboard/class-schedule" className="btn btn-primary">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
+        <div className="max-w-xl w-full bg-white rounded-lg shadow-sm border border-red-100 p-6">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 h-3 w-3 rounded-full bg-red-500" />
+            <div>
+              <h5 className="text-lg font-semibold text-gray-900">
+                Unable to load schedule
+              </h5>
+              <p className="mt-1 text-sm text-gray-600">
+                Class schedule not found or failed to load. Please try again or
+                return to the schedule list.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Link
+              href="/dashboard/class-schedule"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
+            >
               Back to Class Schedule
             </Link>
           </div>
@@ -170,127 +177,97 @@ function AttendancePageSingleClass() {
   }
 
   return (
-    <div className="page-wrapper" style={{ minHeight: 730 }}>
-      <div className="content container-fluid">
-        <div className="row justify-content-center">
-          <div className="col-xl-10 col-12">
-            <div className="card-header py-3 bg-gradient">
-              <div className="row">
-                <div className="col">
-                  <h4 className="card-title">Mark Attendance</h4>
-                  <p className="text-muted mb-0">
-                    Course: {classSchedule?.course?.title || "—"}
-                  </p>
-                  <p className="text-muted mb-0">
-                    Date: {classSchedule?.date || "—"} | Time:{" "}
-                    {classSchedule?.time || "—"}
-                  </p>
-                </div>
-                <div className="col-auto">
-                  <Link
-                    href="/dashboard/class-schedule"
-                    className="btn btn-outline-secondary btn-sm"
-                  >
-                    Back
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <h5 className="mb-3">Select Present Students</h5>
-                    {students.length === 0 ? (
-                      <div className="alert alert-info">
-                        No students assigned to this class schedule.
-                      </div>
-                    ) : (
-                      <div className="list-group">
-                        {students.map((student: any) => {
-                          const studentId = student?.id || student?._id;
-                          const studentName = student?.firstName || "Unknown";
-                          const studentLastName = student?.lastName || "";
-                          const studentEmail = student?.email || "—";
-
-                          return (
-                            <div
-                              key={studentId}
-                              className="list-group-item d-flex align-items-center"
-                            >
-                              <div className="form-check me-3">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  checked={selectedStudents.has(studentId)}
-                                  onChange={() =>
-                                    handleCheckboxChange(studentId)
-                                  }
-                                  id={`student-${studentId}`}
-                                />
-                                <label
-                                  className="form-check-label"
-                                  htmlFor={`student-${studentId}`}
-                                ></label>
-                              </div>
-                              <div className="grow">
-                                <div className="fw-semibold">
-                                  {studentName} {studentLastName}
-                                </div>
-                                <div className="text-muted small">
-                                  {studentEmail}
-                                </div>
-                              </div>
-                              <div>
-                                {selectedStudents.has(studentId) ? (
-                                  <span className="badge bg-success">
-                                    Present
-                                  </span>
-                                ) : (
-                                  <span className="badge bg-danger">
-                                    Absent
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="d-flex justify-content-between align-items-center mt-4">
-                    <div>
-                      <span className="text-muted">
-                        Selected: {selectedStudents.size} / {students.length}
-                      </span>
-                    </div>
-                    <div>
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={isSubmitting || students.length === 0}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <span
-                              className="spinner-border spinner-border-sm me-2"
-                              role="status"
-                              aria-hidden="true"
-                            ></span>
-                            Submitting...
-                          </>
-                        ) : (
-                          "Mark Attendance"
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Mark Attendance
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Course: {classSchedule?.course?.title || "—"}
+            </p>
+            <p className="text-gray-600">
+              Date: {classSchedule?.date || "—"} | Time:{" "}
+              {classSchedule?.time || "—"}
+            </p>
           </div>
+          <Link
+            href="/dashboard/class-schedule"
+            className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
+          >
+            Back
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                Select Present Students
+              </h2>
+              {students.length === 0 ? (
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  No students assigned to this class schedule.
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
+                  {students.map((student: any) => {
+                    const studentId = student?.id || student?._id;
+                    const studentName = student?.firstName || "Unknown";
+                    const studentLastName = student?.lastName || "";
+                    const studentEmail = student?.email || "—";
+
+                    const isPresent = selectedStudents.has(studentId);
+
+                    return (
+                      <label
+                        key={studentId}
+                        className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          checked={isPresent}
+                          onChange={() => handleCheckboxChange(studentId)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 truncate">
+                            {studentName} {studentLastName}
+                          </div>
+                          <div className="text-sm text-gray-600 truncate">
+                            {studentEmail}
+                          </div>
+                        </div>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            isPresent
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {isPresent ? "Present" : "Absent"}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Selected: {selectedStudents.size} / {students.length}
+              </div>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Mark Attendance"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
