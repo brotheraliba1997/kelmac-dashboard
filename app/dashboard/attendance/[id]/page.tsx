@@ -67,7 +67,7 @@ function AttendancePageSingleClass() {
     e.preventDefault();
 
     if (!classSchedule) {
-      alert("Class schedule not found");
+      alert("Class schedule not founds");
       return;
     }
 
