@@ -1,12 +1,12 @@
 "use client";
 import { logout } from "@/app/redux/slices/auth";
 import { GetUserRoleName } from "@/app/utils/getUserRoleName";
-
 import { array } from "@/app/utils/sidebarJson";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { FaSignOutAlt } from "react-icons/fa";
 
 function Sidebar() {
   const dispatch = useDispatch();
@@ -16,86 +16,79 @@ function Sidebar() {
   const { token, user } = auth;
   const [openSubMenu, setOpenSubMenu] = useState<any>(null);
 
-  console.log("Sidebar user role:", user?.role);
-
   const logoutHandler = async () => {
     router.push("/login");
     dispatch(logout());
-    console.log("Logging out...");
-    // if (!token && !user) {
-    //   router.push("/login");
-    // }
   };
 
   const pathName = usePathname();
 
   return (
-    <div className="sidebar" id="sidebar">
-      <div className="sidebar-inner slimscroll">
-        <div id="sidebar-menu" className="sidebar-menu">
-          <ul>
-            {array
-              .filter((item: any) =>
-                item.role.includes(
-                  GetUserRoleName(user?.role?._id || user?.role?.id)
-                )
-              )
-              .map((item, index) => {
-                // if (item.role.includes(user?.role)) {
-                return (
-                  <li key={`route-${index}`} className="submenu">
-                    <Link
-                    style={{textDecoration: "none"}}
-                      href={item?.path || "#"}
-                      className={`${
-                        openSubMenu === `item-${index}` ? "subdrop" : ""
-                      }`}
-                      onClick={() =>
-                        setOpenSubMenu((prev: any) =>
-                          prev == `item-${index}` ? null : `item-${index}`
-                        )
-                      }
-                    >
-                      {item.svg}
-                      <span> {item.name} </span>{" "}
-                      {/* <span className="menu-arrow"></span> */}
-                    </Link>
-
-                    {/* <ul
-                      style={{
-                        display:
-                          openSubMenu === `item-${index}` ? "block" : "none",
-                      }}
-                    ></ul> */}
-                  </li>
-                );
-              })}
-
-            <li>
-              <Link href="/login" onClick={logoutHandler}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="feather feather-log-out"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>{" "}
-                <span>Logout</span>
-              </Link>
-            </li>
-          </ul>
+    <aside className="w-64 bg-linear-to-b from-gray-900 to-gray-800 h-screen fixed left-0 top-0 z-30 flex flex-col shadow-xl">
+      {/* Logo Section */}
+      <div className="h-20 flex items-center justify-center border-b border-gray-700 px-4">
+        <div className="text-white font-bold text-xl tracking-wide">
+          Kelmac Dashboard
         </div>
       </div>
-    </div>
+
+      {/* Navigation Menu */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <ul className="space-y-1">
+          {array
+            .filter((item: any) =>
+              item.role.includes(
+                GetUserRoleName(user?.role?._id || user?.role?.id)
+              )
+            )
+            .map((item, index) => {
+              const isActive = pathName.startsWith(item?.path);
+              return (
+                <li key={`route-${index}`}>
+                  <Link
+                    href={item?.path || "#"}
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative ${
+                      isActive
+                        ? "bg-primary-600 text-white shadow-lg shadow-primary-600/30 scale-[1.02]"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white hover:scale-[1.01]"
+                    }`}
+                  >
+                    {/* Active indicator line */}
+                    {isActive && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full shadow-lg" />
+                    )}
+                    <div
+                      className={`w-5 h-5 flex items-center justify-center ${
+                        isActive ? "scale-110" : "group-hover:scale-110"
+                      } transition-transform duration-200`}
+                    >
+                      {item.svg}
+                    </div>
+                    <span className="text-sm font-medium">{item.name}</span>
+                    {/* Active pulse effect */}
+                    {isActive && (
+                      <div className="ml-auto">
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      </div>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+        </ul>
+      </nav>
+
+      {/* Logout Button - Fixed at Bottom */}
+      <div className="p-3 border-t border-gray-700">
+        <button
+          onClick={logoutHandler}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-red-600 hover:text-white transition-all duration-200 text-sm font-medium"
+        >
+          <FaSignOutAlt className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
   );
 }
 

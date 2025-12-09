@@ -1,4 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kelmac Dashboard
+
+A comprehensive learning management system built with Next.js, TypeScript, and Tailwind CSS.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS 4
+- **State Management:** Redux Toolkit with RTK Query
+- **UI Components:** Custom components with Tailwind
+- **Icons:** React Icons
+- **Notifications:** React Toastify
 
 ## Getting Started
 

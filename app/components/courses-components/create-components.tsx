@@ -22,6 +22,9 @@ import {
   FaPlus,
   FaEdit,
   FaTrash,
+  FaTimes,
+  FaArrowLeft,
+  FaArrowRight,
 } from "react-icons/fa";
 
 // Redux imports
@@ -410,15 +413,19 @@ const FaqForm: React.FC<FaqFormProps> = ({ initialData, onSave, onCancel }) => {
         )}
       </div>
 
-      <div className="d-flex justify-content-end gap-2">
+      <div className="flex gap-3 pt-4">
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={onCancel}
         >
-          Cancel
+          <FaArrowLeft className="w-4 h-4 mr-2" />
+          Previous
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
+        >
           {initialData ? "Update FAQ" : "Add FAQ"}
         </button>
       </div>
@@ -679,15 +686,19 @@ const SessionForm: React.FC<SessionFormProps> = ({
         </div>
       ))}
 
-      <div className="d-flex justify-content-end gap-2 mt-3">
+      <div className="flex gap-3 pt-4">
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={onCancel}
         >
-          Cancel
+          <FaArrowLeft className="w-4 h-4 mr-2" />
+          Previous
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
+        >
           {initialData ? "Update Session" : "Add Session"}
         </button>
       </div>
@@ -1609,20 +1620,22 @@ export default function ImprovedDynamicCourseForm({
                       </div>
                     )}
 
-                    <div className="d-flex justify-content-between mt-4">
+                    <div className="flex gap-3 mt-4">
                       <button
                         type="button"
-                        className="btn btn-outline-secondary"
+                        className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         onClick={handleCancel}
                       >
+                        <FaArrowLeft className="w-4 h-4 mr-2" />
                         Previous
                       </button>
                       <button
                         type="button"
-                        className="btn btn-primary"
+                        className="flex-1 inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                         onClick={() => handleStepSubmit({})}
                       >
                         Next Step
+                        <FaArrowRight className="w-4 h-4 ml-2" />
                       </button>
                     </div>
                   </div>
@@ -1796,20 +1809,22 @@ export default function ImprovedDynamicCourseForm({
                       </div>
                     )}
 
-                    <div className="d-flex justify-content-between mt-4">
+                    <div className="flex gap-3 mt-4">
                       <button
                         type="button"
-                        className="btn btn-outline-secondary"
+                        className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         onClick={handleCancel}
                       >
+                        <FaArrowLeft className="w-4 h-4 mr-2" />
                         Previous
                       </button>
                       <button
                         type="button"
-                        className="btn btn-primary"
+                        className="flex-1 inline-flex items-center justify-center px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                         onClick={() => handleStepSubmit({})}
                       >
                         Next Step
+                        <FaArrowRight className="w-4 h-4 ml-2" />
                       </button>
                     </div>
                   </div>

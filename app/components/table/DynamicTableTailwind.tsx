@@ -212,7 +212,7 @@ export default function DynamicTableTailwind<
       case "select":
         return (
           <select
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           >
@@ -229,7 +229,7 @@ export default function DynamicTableTailwind<
         return (
           <input
             type="date"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
           />
@@ -239,7 +239,7 @@ export default function DynamicTableTailwind<
         return (
           <input
             type="text"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             placeholder={filter.placeholder || `Filter by ${filter.label}`}
             value={(filterValues?.[filter.key] as string) || ""}
             onChange={(e) => handleFilterChange(filter.key, e.target.value)}
@@ -259,7 +259,7 @@ export default function DynamicTableTailwind<
   if (error) {
     return (
       <div
-        className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg"
+        className="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg"
         role="alert"
       >
         <p className="font-medium">Error</p>
@@ -281,7 +281,7 @@ export default function DynamicTableTailwind<
             <button
               type="button"
               onClick={onAdd}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg shadow hover:bg-primary-700 transition-colors"
             >
               <FaPlus />
               {addButtonLabel}
@@ -336,7 +336,7 @@ export default function DynamicTableTailwind<
                     <FaFilter className="inline mr-2" />
                     Filters
                     {activeFiltersCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      <span className="absolute -top-2 -right-2 bg-danger-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                         {activeFiltersCount}
                       </span>
                     )}
@@ -511,44 +511,53 @@ export default function DynamicTableTailwind<
                   })}
                   {(onView || onEdit || onDelete) && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
                         {onView && (
                           <button
                             type="button"
-                            className="text-blue-600 hover:text-blue-800"
+                            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 group relative"
                             title="View"
                             onClick={(event) => {
                               event.stopPropagation();
                               onView(item);
                             }}
                           >
-                            <FaEye />
+                            <FaEye className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                              View
+                            </span>
                           </button>
                         )}
                         {onEdit && (
                           <button
                             type="button"
-                            className="text-green-600 hover:text-green-800"
+                            className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-all duration-200 group relative"
                             title="Edit"
                             onClick={(event) => {
                               event.stopPropagation();
                               onEdit(item);
                             }}
                           >
-                            <FaEdit />
+                            <FaEdit className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                              Edit
+                            </span>
                           </button>
                         )}
                         {onDelete && (
                           <button
                             type="button"
-                            className="text-red-600 hover:text-red-800"
+                            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 group relative"
                             title="Delete"
                             onClick={(event) => {
                               event.stopPropagation();
                               onDelete(item);
                             }}
                           >
-                            <FaTrash />
+                            <FaTrash className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                              Delete
+                            </span>
                           </button>
                         )}
                       </div>

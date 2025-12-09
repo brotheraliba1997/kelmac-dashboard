@@ -24,6 +24,7 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaCheckCircle,
+  FaTimes,
 } from "react-icons/fa";
 import { useGetUsersQuery } from "../../redux/services/userApi";
 import { useGetLocationsQuery } from "../../redux/services/locationApi";
@@ -346,17 +347,18 @@ const FaqForm = React.memo<{
         )}
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex gap-3 pt-4">
         <button
           type="button"
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={onCancel}
         >
-          Cancel
+          <FaTimes className="w-4 h-4 mr-2" />
+          Previous
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
         >
           {initialData ? "Update FAQ" : "Add FAQ"}
         </button>
@@ -488,17 +490,18 @@ const TimeBlockForm = React.memo<{
         </select>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex gap-3 pt-4">
         <button
           type="button"
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           onClick={onCancel}
         >
-          Cancel
+          <FaTimes className="w-4 h-4 mr-2" />
+          Previous
         </button>
         <button
           type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
         >
           {initialData ? "Update Time Block" : "Add Time Block"}
         </button>
@@ -673,19 +676,6 @@ const SessionForm = React.memo<{
     setLocationPage(page);
   };
 
-  // Clear invalid location selection if the selected option lacks an id
-  // useEffect(() => {
-  //   const selected = locationOptions.find(
-  //     (opt) => opt.value === formData.location
-  //   );
-  //   if (selected && selected.disabled) {
-  //     setFormData((prev) => ({ ...prev, location: "" }));
-  //     toast.warn(
-  //       "Selected location is missing an id. Please choose another location."
-  //     );
-  //   }
-  // }, [locationOptions, formData.location]);
-
   const handleInstructorSearch = (search: string, page: number) => {
     setInstructorSearch(search);
     setInstructorPage(page);
@@ -816,7 +806,7 @@ const SessionForm = React.memo<{
             </div>
             <button
               type="button"
-              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2"
               onClick={() => setShowTimeBlockForm(true)}
             >
               <FaPlus className="w-4 h-4 mr-1" />
@@ -896,17 +886,18 @@ const SessionForm = React.memo<{
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex gap-3 pt-4">
           <button
             type="button"
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             onClick={onCancel}
           >
-            Cancel
+            <FaTimes className="w-4 h-4 mr-2" />
+            Previous
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
           >
             {initialData ? "Update Session" : "Add Session"}
           </button>
@@ -915,7 +906,7 @@ const SessionForm = React.memo<{
 
       {/* Time Block Form Modal */}
       {showTimeBlockForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -976,7 +967,7 @@ const StepProgress = React.memo<{
         <h2 className="text-2xl font-bold text-gray-900">
           Course {currentStep === totalSteps ? "Details" : "Creation"}
         </h2>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
           Step {currentStep} of {totalSteps}
         </span>
       </div>
@@ -984,7 +975,7 @@ const StepProgress = React.memo<{
       <div className="relative">
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200">
           <div
-            className="absolute top-0 left-0 h-0.5 bg-blue-600 transition-all duration-300"
+            className="absolute top-0 left-0 h-0.5 bg-primary-600 transition-all duration-300"
             style={{
               width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
             }}
@@ -1001,9 +992,9 @@ const StepProgress = React.memo<{
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     isCompleted
-                      ? "bg-blue-600 border-blue-600 text-white"
+                      ? "bg-primary-600 border-primary-600 text-white"
                       : isCurrent
-                      ? "border-blue-600 bg-white text-blue-600"
+                      ? "border-primary-600 bg-white text-primary-600"
                       : "border-gray-300 bg-white text-gray-400"
                   }`}
                 >
@@ -1587,7 +1578,6 @@ export default function DynamicCourseForm({
         const errorMessage =
           "Please fix the following errors:\n" + validationErrors.join("\n");
         toast.error(errorMessage);
-        console.error("Validation errors:", validationErrors);
         return;
       }
 
@@ -1757,7 +1747,7 @@ export default function DynamicCourseForm({
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                   onClick={() => setShowFaqForm(true)}
                 >
                   <FaPlus className="w-4 h-4 mr-2" />
@@ -1776,7 +1766,7 @@ export default function DynamicCourseForm({
                   </p>
                   <button
                     type="button"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                     onClick={() => setShowFaqForm(true)}
                   >
                     <FaPlus className="w-4 h-4 mr-2" />
@@ -1834,7 +1824,7 @@ export default function DynamicCourseForm({
               )}
 
               {showFaqForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                   <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <div className="p-6 border-b border-gray-200">
                       <h3 className="text-xl font-semibold text-gray-900">
@@ -1859,22 +1849,21 @@ export default function DynamicCourseForm({
                 </div>
               )}
 
-              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+              <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   onClick={handleCancel}
                 >
-                  <FaChevronLeft className="w-4 h-4 mr-2" />
+                  <FaTimes className="w-4 h-4 mr-2" />
                   Previous
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                   onClick={() => handleStepSubmit({})}
                 >
                   Next: Sessions
-                  <FaChevronRight className="w-4 h-4 ml-2" />
                 </button>
               </div>
             </div>
@@ -1896,7 +1885,7 @@ export default function DynamicCourseForm({
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                   onClick={() => setShowSessionForm(true)}
                 >
                   <FaPlus className="w-4 h-4 mr-2" />
@@ -2007,7 +1996,7 @@ export default function DynamicCourseForm({
               )}
 
               {showSessionForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                   <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                     <div className="p-6 border-b border-gray-200">
                       <h3 className="text-xl font-semibold text-gray-900">
@@ -2034,22 +2023,21 @@ export default function DynamicCourseForm({
                 </div>
               )}
 
-              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+              <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   onClick={handleCancel}
                 >
-                  <FaChevronLeft className="w-4 h-4 mr-2" />
+                  <FaTimes className="w-4 h-4 mr-2" />
                   Previous
                 </button>
                 <button
                   type="button"
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                  className="flex-1 px-6 py-2.5 text-sm font-semibold text-white bg-secondary rounded-lg hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary/40 focus:ring-offset-2 transition-all duration-200"
                   onClick={() => handleStepSubmit({})}
                 >
                   Next: Final Details
-                  <FaChevronRight className="w-4 h-4 ml-2" />
                 </button>
               </div>
             </div>

@@ -1,7 +1,8 @@
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "@/app/redux/slices/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,21 +11,36 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
   const router = useRouter();
-  const { user, isAuthenticated } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch();
+  const { user, isAuthenticated, token } = useSelector(
+    (state: any) => state.auth
+  );
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else if (roles && !roles.includes(user?.role)) {
-      router.push('/unauthorized');
+    // Check if token exists
+    if (!token || !isAuthenticated) {
+      dispatch(logout());
+      router.push("/login");
+      return;
     }
-  }, [isAuthenticated, user, router, roles]);
 
-  if (!isAuthenticated) {
+    // Check role-based access
+    if (roles && user && !roles.includes(user?.role)) {
+      router.push("/unauthorized");
+    }
+  }, [isAuthenticated, user, token, router, roles, dispatch]);
+
+  if (!isAuthenticated || !token) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div
+        className="flex justify-center items-center"
+        style={{ height: "100vh" }}
+      >
+        <div
+          className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"
+          role="status"
+        >
+          <span className="sr-only">Loading...</span>
         </div>
       </div>
     );

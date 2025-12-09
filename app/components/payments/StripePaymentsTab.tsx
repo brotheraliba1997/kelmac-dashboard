@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useGetPaymentsQuery } from "@/app/redux/services/PaymentAPI";
 import { toast } from "react-toastify";
-import { FaCheck, FaEye, FaFileInvoice, FaTimes } from "react-icons/fa";
+import { FaCheck, FaEye, FaFileInvoice, FaTimes, FaUser } from "react-icons/fa";
 import DynamicTable, {
   Column,
   FilterConfig,
-} from "@/app/components/table/DynamicTableTailwind";
+} from "@/app/components/table/DynamicTable";
 import { useUpdatePurchaseOrderMutation } from "@/app/redux/services/purchaseOrderApi";
 
 export default function StripePaymentsTab() {
@@ -66,27 +66,46 @@ export default function StripePaymentsTab() {
       key: "userId",
       label: "Customer",
       sortable: true,
-      render: (payment) => (
-        <div className="flex items-center">
-          <img
-            className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-gray-200"
-            src={payment.userId?.avatar || "/default-avatar.png"}
-            alt="User"
-          />
-          <div>
-            <div className="font-semibold text-gray-900">
-              {payment.userId?.firstName} {payment.userId?.lastName}
+      render: (payment) => {
+        const user = payment.userId;
+        const initials = user
+          ? `${user.firstName?.[0] || ""}${
+              user.lastName?.[0] || ""
+            }`.toUpperCase()
+          : "U";
+
+        return (
+          <div className="flex items-center gap-3">
+            {user?.avatar ? (
+              <img
+                className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                src={user.avatar}
+                alt={`${user.firstName} ${user.lastName}`}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center border border-gray-200">
+                <FaUser className="text-white text-sm" />
+              </div>
+            )}
+            <div>
+              <div className="font-semibold text-gray-900">
+                {user?.firstName} {user?.lastName}
+              </div>
+              <div className="text-sm text-gray-500">{user?.email}</div>
             </div>
-            <div className="text-sm text-gray-500">{payment.userId?.email}</div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "courseId.title",
       label: "Course",
       sortable: true,
-      render: (payment) => payment.courseId?.title || "N/A",
+      render: (payment) => (
+        <span className="font-semibold text-gray-900">
+          {payment.courseId?.title || "N/A"}
+        </span>
+      ),
     },
     {
       key: "amount",
@@ -144,27 +163,45 @@ export default function StripePaymentsTab() {
       key: "actions",
       label: "Actions",
       render: (payment) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
-            className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 text-sm font-medium transition-colors"
+            className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 group relative"
             title="View Details"
             onClick={() => {
               toast.info("View details functionality coming soon!");
             }}
           >
-            <FaEye />
+            <FaEye className="w-4 h-4" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              View
+            </span>
           </button>
           {payment.receiptUrl && (
             <a
               href={payment.receiptUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-3 py-1.5 border border-green-600 text-green-600 rounded-md hover:bg-green-50 text-sm font-medium transition-colors"
-              title="View Receipt"
+              className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-all duration-200 group relative"
+              title="Download Receipt"
             >
-              <FaFileInvoice />
+              <FaFileInvoice className="w-4 h-4" />
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                Receipt
+              </span>
             </a>
           )}
+          <button
+            className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 group relative"
+            title="Delete Payment"
+            onClick={() => {
+              toast.info("Delete functionality coming soon!");
+            }}
+          >
+            <FaTimes className="w-4 h-4" />
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Delete
+            </span>
+          </button>
         </div>
       ),
     },
@@ -191,6 +228,7 @@ export default function StripePaymentsTab() {
     setStatusFilter(filters.status || "");
     setCurrentPage(1); // Reset to first page when filter changes
   };
+
   const handleOpenModal = (order: any, action: "approve" | "reject") => {
     setSelectedOrder(order);
     setActionType(action);
@@ -269,7 +307,6 @@ export default function StripePaymentsTab() {
           "paymentMethod",
         ]}
         filters={paymentsFilters}
-        onFilterChange={handlePaymentsFilterChange}
         pagination={
           paymentsData
             ? {
@@ -288,7 +325,7 @@ export default function StripePaymentsTab() {
       {/* Modal for Approve/Reject */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={handleCloseModal}
         >
           <div

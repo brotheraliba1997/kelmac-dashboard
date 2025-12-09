@@ -1,6 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 
-import { baseQueryWithoutAuth } from "./api";
+import { baseQueryWithoutAuth } from "./baseQuery";
 
 type LoginPayload = {
   email: string;

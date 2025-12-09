@@ -1,12 +1,23 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { authAPI } from "../services/authApi";
-import { userAPI } from "../services/userApi";
-
 type StoredUser = {
   role?: string;
   [key: string]: unknown;
 } | null;
+
+// Type declarations for APIs (will be resolved at runtime)
+let authAPI: any;
+let userAPI: any;
+
+// Resolve circular dependencies by lazy loading
+const initializeAPIs = () => {
+  if (!authAPI) {
+    authAPI = require("../services/authApi").authAPI;
+  }
+  if (!userAPI) {
+    userAPI = require("../services/userApi").userAPI;
+  }
+};
 
 const getStoredItem = <T>(key: string): T | null => {
   if (typeof window === "undefined") {
@@ -31,6 +42,7 @@ export type AuthState = {
   isStudent: boolean;
   isInstructor: boolean;
   isLoadingUser?: boolean;
+  isAuthenticated: boolean;
 };
 
 const initialState: AuthState = {
@@ -40,6 +52,7 @@ const initialState: AuthState = {
   isStudent: user?.role === "student",
   isInstructor: user?.role === "instructor",
   isLoadingUser: false,
+  isAuthenticated: !!token && !!user,
 };
 
 const slice = createSlice({
@@ -49,6 +62,10 @@ const slice = createSlice({
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.isAuthenticated = false;
+      state.isAdmin = false;
+      state.isStudent = false;
+      state.isInstructor = false;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     },
@@ -57,23 +74,29 @@ const slice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Initialize APIs to resolve circular dependencies
+    initializeAPIs();
+
     builder
       .addMatcher(
         authAPI.endpoints.loginUser.matchFulfilled,
-        (state, { payload }) => {
+        (state, action: any) => {
+          const { payload } = action;
           const data = payload as { user: any; token?: string };
           state.user = data.user;
           state.isAdmin = data.user.role === "admin";
           state.isStudent = data.user.role === "student";
           state.isInstructor = data.user.role === "instructor";
           state.token = data.token ?? null;
+          state.isAuthenticated = !!(data.token && data.user);
           localStorage.setItem("user", JSON.stringify(data.user));
           localStorage.setItem("token", JSON.stringify(data.token));
         }
       )
       .addMatcher(
         userAPI.endpoints.updateProfile.matchFulfilled,
-        (state, { payload }) => {
+        (state, action: any) => {
+          const { payload } = action;
           const data = payload as unknown as { user: any };
           state.user = { ...(state.user ?? {}), ...data };
           localStorage.setItem("user", JSON.stringify(state.user));
@@ -82,6 +105,10 @@ const slice = createSlice({
       .addMatcher(authAPI.endpoints.loginUser.matchRejected, (state) => {
         state.user = null;
         state.token = null;
+        state.isAuthenticated = false;
+        state.isAdmin = false;
+        state.isStudent = false;
+        state.isInstructor = false;
       });
   },
 });
