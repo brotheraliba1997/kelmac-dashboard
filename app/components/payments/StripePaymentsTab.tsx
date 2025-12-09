@@ -102,7 +102,7 @@ export default function StripePaymentsTab() {
       label: "Course",
       sortable: true,
       render: (payment) => (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+        <span className="font-semibold text-gray-900">
           {payment.courseId?.title || "N/A"}
         </span>
       ),
@@ -325,7 +325,7 @@ export default function StripePaymentsTab() {
       {/* Modal for Approve/Reject */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={handleCloseModal}
         >
           <div

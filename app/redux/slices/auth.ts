@@ -1,12 +1,23 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { authAPI } from "../services/authApi";
-import { userAPI } from "../services/userApi";
-
 type StoredUser = {
   role?: string;
   [key: string]: unknown;
 } | null;
+
+// Type declarations for APIs (will be resolved at runtime)
+let authAPI: any;
+let userAPI: any;
+
+// Resolve circular dependencies by lazy loading
+const initializeAPIs = () => {
+  if (!authAPI) {
+    authAPI = require("../services/authApi").authAPI;
+  }
+  if (!userAPI) {
+    userAPI = require("../services/userApi").userAPI;
+  }
+};
 
 const getStoredItem = <T>(key: string): T | null => {
   if (typeof window === "undefined") {
@@ -63,10 +74,14 @@ const slice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Initialize APIs to resolve circular dependencies
+    initializeAPIs();
+
     builder
       .addMatcher(
         authAPI.endpoints.loginUser.matchFulfilled,
-        (state, { payload }) => {
+        (state, action: any) => {
+          const { payload } = action;
           const data = payload as { user: any; token?: string };
           state.user = data.user;
           state.isAdmin = data.user.role === "admin";
@@ -80,7 +95,8 @@ const slice = createSlice({
       )
       .addMatcher(
         userAPI.endpoints.updateProfile.matchFulfilled,
-        (state, { payload }) => {
+        (state, action: any) => {
+          const { payload } = action;
           const data = payload as unknown as { user: any };
           state.user = { ...(state.user ?? {}), ...data };
           localStorage.setItem("user", JSON.stringify(state.user));

@@ -315,7 +315,7 @@ export default function PurchaseOrdersTab() {
       {/* Modal for Approve/Reject */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={handleCloseModal}
         >
           <div
@@ -531,7 +531,7 @@ export default function PurchaseOrdersTab() {
       {/* Image/Document Viewer Modal */}
       {showImageModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-75 z-60 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-60 flex items-center justify-center p-4"
           onClick={handleCloseImageModal}
         >
           <div
