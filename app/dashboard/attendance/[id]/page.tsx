@@ -30,44 +30,107 @@ function AttendancePageSingleClass() {
   // Students format: [{ id, email, firstName, lastName }, ...]
   const students = classSchedule?.students || [];
 
+  // Get sessions from course, not directly from classSchedule
+  // Sessions are stored in classSchedule.course.sessions
+  const courseSessions = classSchedule?.course?.sessions || [];
+
+  // Helper function to find a session by ID in the course sessions
+  const findSessionById = (sessionId: string) => {
+    if (!sessionId) return null;
+    return courseSessions.find(
+      (session: any) => session?.id === sessionId || session?._id === sessionId
+    );
+  };
+
+  // If we have a sessionId in the classSchedule, use that single session
+  // Otherwise, use all course sessions
+  const sessions = classSchedule?.sessionId
+    ? [findSessionById(classSchedule.sessionId)].filter(Boolean)
+    : courseSessions;
+
+  console.log("Students:", students);
+  console.log("Sessions:", sessions);
+
   // Attendance mutation
   const [markBulkAttendance, { isLoading: isSubmitting }] =
     useMarkBulkAttendanceMutation();
 
-  // State for selected students (checkboxes)
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(
-    new Set()
-  );
+  // State for selected students by timeblock (using object with array instead of Set)
+  const [selectedStudentsByTimeBlock, setSelectedStudentsByTimeBlock] =
+    useState<Record<string, string[]>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize with all students selected by default (optional)
+  // Helper function to get a consistent key for each timeblock
+  const getTimeBlockKey = (sessionIdx: number, blockIdx: number) => {
+    return `${sessionIdx}-${blockIdx}`;
+  };
+
+  // Initialize with empty selections for all timeblocks (only once)
   useEffect(() => {
-    if (students.length > 0) {
-      const allStudentIds = students.map(
-        (student: any) => student?.id || student?._id
-      );
-      setSelectedStudents(new Set(allStudentIds));
+    console.log("Sessions length:", sessions.length);
+    if (sessions.length > 0 && students.length > 0 && !isInitialized) {
+      const timeBlockSelections: Record<string, string[]> = {};
+      sessions.forEach((session: any, sessionIdx: number) => {
+        const timeBlocks = session?.timeBlocks || [];
+        console.log(
+          `Session ${sessionIdx} has ${timeBlocks.length} timeblocks`
+        );
+        timeBlocks.forEach((_: any, blockIdx: number) => {
+          const timeBlockKey = getTimeBlockKey(sessionIdx, blockIdx);
+          timeBlockSelections[timeBlockKey] = [];
+        });
+      });
+      console.log("Initializing attendance state:", timeBlockSelections);
+      setSelectedStudentsByTimeBlock(timeBlockSelections);
+      setIsInitialized(true);
     }
-  }, [students]);
+  }, [sessions, students, isInitialized]);
 
-  // Handle checkbox change
-  const handleCheckboxChange = (studentId: string) => {
-    setSelectedStudents((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(studentId)) {
-        newSet.delete(studentId);
-      } else {
-        newSet.add(studentId);
-      }
-      return newSet;
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log("Current attendance state:", selectedStudentsByTimeBlock);
+  }, [selectedStudentsByTimeBlock]);
+
+  // Handle checkbox change for a specific timeblock
+  const handleCheckboxChange = (timeBlockKey: string, studentId: string) => {
+    console.log("Checkbox clicked:", timeBlockKey, studentId);
+    setSelectedStudentsByTimeBlock((prev) => {
+      const currentList = prev[timeBlockKey] || [];
+      const isChecked = currentList.includes(studentId);
+
+      const newList = isChecked
+        ? currentList.filter((id) => id !== studentId)
+        : [...currentList, studentId];
+
+      console.log("Updated list:", newList);
+
+      return {
+        ...prev,
+        [timeBlockKey]: newList,
+      };
     });
   };
 
+  // Toggle all students for a timeblock
+  const toggleAllStudentsForTimeBlock = (
+    timeBlockKey: string,
+    selectAll: boolean
+  ) => {
+    const studentIds = students.map(
+      (student: any) => student?.id || student?._id
+    );
+    setSelectedStudentsByTimeBlock((prev) => ({
+      ...prev,
+      [timeBlockKey]: selectAll ? studentIds : [],
+    }));
+  };
+
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (!classSchedule) {
-      alert("Class schedule not founds");
+      alert("Class schedule not found");
       return;
     }
 
@@ -81,52 +144,70 @@ function AttendancePageSingleClass() {
       courseId = classSchedule.course.id;
     }
 
-    const sessionId = classSchedule?.sessionId;
     const markedBy = user?._id || user?.id || "";
 
-    if (!courseId || !sessionId || !markedBy) {
+    if (!courseId || !markedBy) {
       alert("Missing required information");
       return;
     }
 
-    // Prepare students array with ALL students (both present and absent)
-    // Each student must have both studentId and status
-    const allStudents = (students as any[]).map((student: any) => {
-      const studentId = student?.id || student?._id;
-      const isPresent = selectedStudents.has(studentId);
-
-      return {
-        studentId: studentId,
-        status: isPresent ? "present" : "absent",
-      };
-    });
-
-    // Filter out any students without valid studentId
-    const validStudents = allStudents.filter(
-      (student) => student.studentId && student.studentId.trim() !== ""
-    );
-
     try {
-      const payload = {
-        courseId: courseId, // Only the ID string
-        sessionId: sessionId,
-        markedBy: markedBy,
-        students: validStudents,
-      };
+      // Mark attendance for each timeblock
+      const allRequests: Promise<any>[] = [];
 
-      console.log("Attendance Payload:", payload);
+      sessions.forEach((session: any, sessionIdx: number) => {
+        const timeBlocks = session?.timeBlocks || [];
+        const sessionId = session?.id || session?._id;
 
-      const fixedPayload = {
-        ...payload,
-        sessionId: String(payload.sessionId),
-        markedBy: String(payload.markedBy),
-        students: payload.students.map((s: any) => ({
-          studentId: String(s.studentId),
-          status: s.status === "present" ? "present" : "absent",
-        })) as { studentId: string; status: "present" | "absent" }[],
-      };
-      await markBulkAttendance(fixedPayload).unwrap();
-      alert("Attendance marked successfully!");
+        timeBlocks.forEach((timeBlock: any, blockIdx: number) => {
+          const timeBlockKey = getTimeBlockKey(sessionIdx, blockIdx);
+          const selectedStudentIds =
+            selectedStudentsByTimeBlock[timeBlockKey] || [];
+
+          // Prepare students array with ALL students (both present and absent)
+          const allStudents = (students as any[]).map((student: any) => {
+            const studentId = student?.id || student?._id;
+            const isPresent = selectedStudentIds.includes(studentId);
+
+            return {
+              studentId: studentId,
+              status: isPresent ? "present" : "absent",
+            };
+          });
+
+          // Filter out any students without valid studentId
+          const validStudents = allStudents.filter(
+            (student) => student.studentId && student.studentId.trim() !== ""
+          );
+
+          const payload = {
+            courseId: courseId,
+            sessionId: sessionId,
+            timeBlockKey: timeBlockKey,
+            markedBy: markedBy,
+            students: validStudents,
+          };
+
+          console.log("Attendance Payload:", payload);
+
+          const fixedPayload = {
+            ...payload,
+            sessionId: String(payload.sessionId),
+            timeBlockKey: String(payload.timeBlockKey),
+            markedBy: String(payload.markedBy),
+            students: payload.students.map((s: any) => ({
+              studentId: String(s.studentId),
+              status: s.status === "present" ? "present" : "absent",
+            })) as { studentId: string; status: "present" | "absent" }[],
+          };
+
+          allRequests.push(markBulkAttendance(fixedPayload).unwrap());
+        });
+      });
+
+      // Wait for all requests to complete
+      await Promise.all(allRequests);
+      alert("Attendance marked successfully for all classes!");
       router.push("/dashboard/class-schedule");
     } catch (error: any) {
       console.error("Error marking attendance:", error);
@@ -178,7 +259,7 @@ function AttendancePageSingleClass() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
@@ -201,73 +282,180 @@ function AttendancePageSingleClass() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                Select Present Students
-              </h2>
-              {students.length === 0 ? (
-                <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  No students assigned to this class schedule.
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100 rounded-lg border border-gray-200 overflow-hidden">
-                  {students.map((student: any) => {
-                    const studentId = student?.id || student?._id;
-                    const studentName = student?.firstName || "Unknown";
-                    const studentLastName = student?.lastName || "";
-                    const studentEmail = student?.email || "—";
-
-                    const isPresent = selectedStudents.has(studentId);
-
-                    return (
-                      <label
-                        key={studentId}
-                        className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          checked={isPresent}
-                          onChange={() => handleCheckboxChange(studentId)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">
-                            {studentName} {studentLastName}
-                          </div>
-                          <div className="text-sm text-gray-600 truncate">
-                            {studentEmail}
-                          </div>
-                        </div>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            isPresent
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {isPresent ? "Present" : "Absent"}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Selected: {selectedStudents.size} / {students.length}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {sessions.length === 0 || students.length === 0 ? (
+              <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                {sessions.length === 0
+                  ? "No sessions configured for this class schedule."
+                  : "No students assigned to this class schedule."}
               </div>
+            ) : (
+              <>
+                {/* Grid Table for Attendance */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="sticky left-0 z-10 bg-gray-100 border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900 min-w-[200px]">
+                          Learner
+                        </th>
+                        {/* Column headers for each timeblock */}
+                        {sessions.map((session: any, sessionIdx: number) => {
+                          const timeBlocks = session?.timeBlocks || [];
+                          return timeBlocks.map(
+                            (timeBlock: any, blockIdx: number) => {
+                              const timeBlockKey = getTimeBlockKey(
+                                sessionIdx,
+                                blockIdx
+                              );
+                              return (
+                                <th
+                                  key={timeBlockKey}
+                                  className="border border-gray-300 bg-gray-100 px-3 py-3 text-center font-semibold text-gray-900 min-w-[120px]"
+                                >
+                                  <div className="text-sm">
+                                    <div className="font-medium">
+                                      Class {blockIdx + 1}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      {timeBlock.startDate}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {timeBlock.startTime} -{" "}
+                                      {timeBlock.endTime}
+                                    </div>
+                                  </div>
+                                </th>
+                              );
+                            }
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Student rows */}
+                      {students.map((student: any) => {
+                        const studentId = student?.id || student?._id;
+                        const studentName = student?.firstName || "Unknown";
+                        const studentLastName = student?.lastName || "";
+
+                        return (
+                          <tr key={studentId}>
+                            <td className="sticky left-0 z-10 bg-white border border-gray-300 px-4 py-3 font-medium text-gray-900">
+                              <div className="truncate">
+                                {studentName} {studentLastName}
+                              </div>
+                              <div className="text-xs text-gray-600 truncate">
+                                {student?.email || "—"}
+                              </div>
+                            </td>
+                            {/* Checkbox cells for each timeblock */}
+                            {sessions.map(
+                              (session: any, sessionIdx: number) => {
+                                const timeBlocks = session?.timeBlocks || [];
+                                return timeBlocks.map(
+                                  (timeBlock: any, blockIdx: number) => {
+                                    const timeBlockKey = getTimeBlockKey(
+                                      sessionIdx,
+                                      blockIdx
+                                    );
+                                    const selectedList =
+                                      selectedStudentsByTimeBlock[
+                                        timeBlockKey
+                                      ] || [];
+                                    const isPresent =
+                                      selectedList.includes(studentId);
+
+                                    return (
+                                      <td
+                                        key={`${timeBlockKey}-${studentId}`}
+                                        className="border border-gray-300 px-3 py-3 text-center"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                          checked={isPresent}
+                                          onChange={(e) => {
+                                            console.log(
+                                              "Checkbox change event:",
+                                              {
+                                                timeBlockKey,
+                                                studentId,
+                                                checked: e.target.checked,
+                                                currentList: selectedList,
+                                              }
+                                            );
+                                            handleCheckboxChange(
+                                              timeBlockKey,
+                                              studentId
+                                            );
+                                          }}
+                                        />
+                                      </td>
+                                    );
+                                  }
+                                );
+                              }
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Summary info */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    {sessions.map((session: any, sessionIdx: number) => {
+                      const timeBlocks = session?.timeBlocks || [];
+                      return timeBlocks.map(
+                        (timeBlock: any, blockIdx: number) => {
+                          const timeBlockKey = getTimeBlockKey(
+                            sessionIdx,
+                            blockIdx
+                          );
+                          const totalSelected = (
+                            selectedStudentsByTimeBlock[timeBlockKey] || []
+                          ).length;
+                          return (
+                            <div
+                              key={timeBlockKey}
+                              className="p-3 rounded-lg bg-gray-50 border border-gray-200"
+                            >
+                              <div className="text-xs text-gray-600 font-medium">
+                                Class {blockIdx + 1}
+                              </div>
+                              <div className="text-lg font-bold text-primary-600 mt-1">
+                                {totalSelected}/{students.length}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Present
+                              </div>
+                            </div>
+                          );
+                        }
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </form>
+
+          {/* Submit Button - Outside form for better visibility */}
+          {sessions.length > 0 && students.length > 0 && (
+            <div className="flex items-center justify-center pt-6 mt-6 border-t-2 border-gray-200">
               <button
-                type="submit"
-                className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
+                type="button"
+                onClick={handleSubmit}
+                className="min-w-[200px] px-12 py-4 rounded-lg bg-blue-600 text-white text-lg font-bold uppercase tracking-wide hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl active:scale-95"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Mark Attendance"}
+                {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
               </button>
             </div>
-          </form>
+          )}
         </div>
       </div>
     </div>
