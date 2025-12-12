@@ -20,6 +20,34 @@ export const authAPI = createApi({
         method: "POST",
         body: credentials,
       }),
+      transformResponse: (response: any) => {
+        const role = response?.user?.role;
+        const roleId =
+          typeof role === "number"
+            ? role
+            : typeof role === "object" && role?.id
+            ? role.id
+            : undefined;
+        const roleName = typeof role === "string" ? role : undefined;
+        const allowedIds = [1, 3, 4, 5, 6];
+        const allowedNames = [
+          "admin",
+          "instructor",
+          "corporate",
+          "finance",
+          "operator",
+        ];
+
+        const isAllowed =
+          (roleId !== undefined && allowedIds.includes(roleId)) ||
+          (roleName !== undefined && allowedNames.includes(roleName));
+
+        if (!isAllowed) {
+          throw new Error("Unauthorized role");
+        }
+
+        return response;
+      },
     }),
 
     forgotPassword: builder.mutation<unknown, { email: string }>({

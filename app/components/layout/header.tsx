@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import logo from "@/app/assets/img/logo.png";
 import { FaBell, FaCog, FaSignOutAlt, FaChevronDown } from "react-icons/fa";
 import { logout } from "@/app/redux/slices/auth";
+import { getUserRole } from "@/app/utils/permissionChecker";
+import { GetUserRoleName } from "@/app/utils/getUserRoleName";
 
 function Header() {
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -30,7 +32,7 @@ function Header() {
   // Get display name
   const getDisplayName = () => {
     if (!user) return "Super Admin";
-    if (user.name) return user.name;
+    if (user.firstName) return user.firstName + " " + (user.lastName || "");
     if (user.email) return user.email.split("@")[0];
     return "User";
   };
@@ -40,7 +42,6 @@ function Header() {
     if (!user) return "admin@kelmac.com";
     return user.email || "No email provided";
   };
-
   // Handle logout
   const handleLogout = () => {
     dispatch(logout());
@@ -257,19 +258,24 @@ function Header() {
                 setUserMenuOpen(!userMenuOpen);
                 setNotificationOpen(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 transition-colors group"
               title="User Menu"
             >
-              <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary-500 to-primary-600 flex items-center justify-center shrink-0">
-                <span className="text-white text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0">
+                <span className="text-primary-600 text-xs font-bold">
                   {getUserInitials()}
                 </span>
               </div>
-              <span className="text-sm font-medium text-gray-900 hidden sm:inline">
-                {getDisplayName()}
-              </span>
+              <div className="flex flex-col items-start">
+                <span className="text-sm capitalize font-medium text-white hidden sm:inline">
+                  {getDisplayName()}
+                </span>
+                <span className="text-sm capitalize font-medium text-white hidden sm:inline">
+                  {GetUserRoleName(user?.role?.id)}
+                </span>
+              </div>
               <FaChevronDown
-                className={`w-3 h-3 text-gray-600 transition-transform ${
+                className={`w-3 h-3 text-white transition-transform ${
                   userMenuOpen ? "rotate-180" : ""
                 }`}
               />

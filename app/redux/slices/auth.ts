@@ -1,4 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { getUserRole } from "@/app/utils/permissionChecker";
+import { UserRole } from "@/app/utils/permissions";
 
 type StoredUser = {
   role?: string;
@@ -39,7 +41,6 @@ export type AuthState = {
   user: StoredUser;
   token: string | null;
   isAdmin: boolean;
-  isStudent: boolean;
   isInstructor: boolean;
   isLoadingUser?: boolean;
   isAuthenticated: boolean;
@@ -49,7 +50,6 @@ const initialState: AuthState = {
   user,
   token,
   isAdmin: user?.role === "admin",
-  isStudent: user?.role === "student",
   isInstructor: user?.role === "instructor",
   isLoadingUser: false,
   isAuthenticated: !!token && !!user,
@@ -64,7 +64,6 @@ const slice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       state.isAdmin = false;
-      state.isStudent = false;
       state.isInstructor = false;
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -83,10 +82,29 @@ const slice = createSlice({
         (state, action: any) => {
           const { payload } = action;
           const data = payload as { user: any; token?: string };
+          const roleId = getUserRole(data.user);
+          const allowedRoles = [
+            UserRole.ADMIN,
+            UserRole.INSTRUCTOR,
+            UserRole.CORPORATE,
+            UserRole.FINANCE,
+            UserRole.OPERATOR,
+          ];
+
+          if (!roleId || !allowedRoles.includes(roleId)) {
+            state.user = null;
+            state.token = null;
+            state.isAuthenticated = false;
+            state.isAdmin = false;
+            state.isInstructor = false;
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            return;
+          }
+
           state.user = data.user;
-          state.isAdmin = data.user.role === "admin";
-          state.isStudent = data.user.role === "student";
-          state.isInstructor = data.user.role === "instructor";
+          state.isAdmin = roleId === UserRole.ADMIN;
+          state.isInstructor = roleId === UserRole.INSTRUCTOR;
           state.token = data.token ?? null;
           state.isAuthenticated = !!(data.token && data.user);
           localStorage.setItem("user", JSON.stringify(data.user));
@@ -107,7 +125,6 @@ const slice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.isAdmin = false;
-        state.isStudent = false;
         state.isInstructor = false;
       });
   },

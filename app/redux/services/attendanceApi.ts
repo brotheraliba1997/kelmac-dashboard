@@ -6,6 +6,39 @@ export const attendanceApi = createApi({
   baseQuery: baseQueryWithAuth,
   tagTypes: ["Attendance"],
   endpoints: (builder) => ({
+    // Get pass/fail assignment summary and results
+    getPassFailCheckAssignment: builder.query<
+      {
+        classScheduleId: string;
+        courseId: string;
+        sessionId: string;
+        totalStudents: number;
+        passedStudents: number;
+        failedStudents: number;
+        results: Array<{
+          id: string;
+          studentId: string;
+          studentName: string;
+          totalClasses: number;
+          presentCount: number;
+          absentCount: number;
+          result: "PASS" | "FAIL" | string;
+          certificateIssued: boolean;
+          certificateId?: string;
+        }>;
+      },
+      { classScheduleId: string; courseId: string; sessionId: string }
+    >({
+      query: ({ classScheduleId, courseId, sessionId }) => ({
+        url:
+          `/attendance/pass-fail-check-assigment` +
+          `?classScheduleId=${encodeURIComponent(classScheduleId)}` +
+          `&courseId=${encodeURIComponent(courseId)}` +
+          `&sessionId=${encodeURIComponent(sessionId)}`,
+        method: "GET",
+      }),
+      providesTags: ["Attendance"],
+    }),
     // Bulk attendance marking
     markBulkAttendance: builder.mutation({
       query: (body: {
@@ -23,8 +56,29 @@ export const attendanceApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+    // Approve or reject certificate
+    approveCertificate: builder.mutation<
+      { success: boolean; message: string },
+      {
+        recordId: string;
+        approve: boolean;
+        notes?: string;
+        certificateUrl?: string;
+        operatorId: string;
+      }
+    >({
+      query: (body) => ({
+        url: "/attendance/pass-fail-approve-certificate",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Attendance"],
+    }),
   }),
 });
 
-export const { useMarkBulkAttendanceMutation } = attendanceApi;
-
+export const {
+  useMarkBulkAttendanceMutation,
+  useGetPassFailCheckAssignmentQuery,
+  useApproveCertificateMutation,
+} = attendanceApi;

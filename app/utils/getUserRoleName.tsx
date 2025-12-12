@@ -2,14 +2,14 @@ export function GetUserRoleName(roleId?: number): string {
   switch (roleId) {
     case 1:
       return "admin";
-    case 2:
-      return "student";
     case 3:
       return "instructor";
     case 4:
       return "corporate";
     case 5:
       return "finance";
+    case 6:
+      return "operator";
     default:
       return "unknown";
   }

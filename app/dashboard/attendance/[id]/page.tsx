@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useGetClassScheduleByIdQuery } from "@/app/redux/services/classScheduleApi";
 import { useMarkBulkAttendanceMutation } from "@/app/redux/services/attendanceApi";
@@ -9,9 +9,12 @@ import Link from "next/link";
 function AttendancePageSingleClass() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params?.id as string;
 
-  console.log(id, "sssss=>");
+  // Get query parameters for filtering timeblock
+  const startDateParam = searchParams.get("startDate");
+  const startTimeParam = searchParams.get("startTime");
 
   const { user } = useSelector((state: any) => state.auth);
 
@@ -23,8 +26,6 @@ function AttendancePageSingleClass() {
   } = useGetClassScheduleByIdQuery(id, { skip: !id });
 
   const classSchedule = (classScheduleData as any)?.data || classScheduleData;
-
-  console.log(classSchedule, "classSchedule=>");
 
   // Get students directly from class schedule
   // Students format: [{ id, email, firstName, lastName }, ...]
@@ -48,88 +49,67 @@ function AttendancePageSingleClass() {
     ? [findSessionById(classSchedule.sessionId)].filter(Boolean)
     : courseSessions;
 
-  console.log("Students:", students);
-  console.log("Sessions:", sessions);
-
   // Attendance mutation
   const [markBulkAttendance, { isLoading: isSubmitting }] =
     useMarkBulkAttendanceMutation();
 
-  // State for selected students by timeblock (using object with array instead of Set)
-  const [selectedStudentsByTimeBlock, setSelectedStudentsByTimeBlock] =
-    useState<Record<string, string[]>>({});
-  const [isInitialized, setIsInitialized] = useState(false);
+  // State for selected students (simplified for single timeblock)
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
-  // Helper function to get a consistent key for each timeblock
-  const getTimeBlockKey = (sessionIdx: number, blockIdx: number) => {
-    return `${sessionIdx}-${blockIdx}`;
-  };
+  // Find the specific timeblock based on query parameters
+  let targetTimeBlock = null;
+  let targetSessionId = null;
 
-  // Initialize with empty selections for all timeblocks (only once)
-  useEffect(() => {
-    console.log("Sessions length:", sessions.length);
-    if (sessions.length > 0 && students.length > 0 && !isInitialized) {
-      const timeBlockSelections: Record<string, string[]> = {};
-      sessions.forEach((session: any, sessionIdx: number) => {
-        const timeBlocks = session?.timeBlocks || [];
-        console.log(
-          `Session ${sessionIdx} has ${timeBlocks.length} timeblocks`
-        );
-        timeBlocks.forEach((_: any, blockIdx: number) => {
-          const timeBlockKey = getTimeBlockKey(sessionIdx, blockIdx);
-          timeBlockSelections[timeBlockKey] = [];
-        });
-      });
-      console.log("Initializing attendance state:", timeBlockSelections);
-      setSelectedStudentsByTimeBlock(timeBlockSelections);
-      setIsInitialized(true);
+  if (startDateParam && startTimeParam) {
+    // Search through all sessions and timeblocks for a match
+    for (const session of sessions) {
+      const timeBlocks = session?.timeBlocks || [];
+      const foundBlock = timeBlocks.find(
+        (tb: any) =>
+          tb.startDate === startDateParam && tb.startTime === startTimeParam
+      );
+      if (foundBlock) {
+        targetTimeBlock = foundBlock;
+        targetSessionId = session?.id || session?._id;
+        break;
+      }
     }
-  }, [sessions, students, isInitialized]);
+  }
 
-  // Debug: Log state changes
-  useEffect(() => {
-    console.log("Current attendance state:", selectedStudentsByTimeBlock);
-  }, [selectedStudentsByTimeBlock]);
+  // Fallback to first timeblock if no match or no query params
+  const firstSession = sessions[0];
+  const firstTimeBlock = firstSession?.timeBlocks?.[0];
+  const firstSessionId = firstSession?.id || firstSession?._id;
 
-  // Handle checkbox change for a specific timeblock
-  const handleCheckboxChange = (timeBlockKey: string, studentId: string) => {
-    console.log("Checkbox clicked:", timeBlockKey, studentId);
-    setSelectedStudentsByTimeBlock((prev) => {
-      const currentList = prev[timeBlockKey] || [];
-      const isChecked = currentList.includes(studentId);
+  // Use target timeblock if found, otherwise fallback to first
+  const currentTimeBlock = targetTimeBlock || firstTimeBlock;
+  const sessionId = targetSessionId || firstSessionId;
 
-      const newList = isChecked
-        ? currentList.filter((id) => id !== studentId)
-        : [...currentList, studentId];
-
-      console.log("Updated list:", newList);
-
-      return {
-        ...prev,
-        [timeBlockKey]: newList,
-      };
-    });
+  // Handle individual student selection
+  const toggleStudent = (studentId: string) => {
+    setSelectedStudents((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    );
   };
 
-  // Toggle all students for a timeblock
-  const toggleAllStudentsForTimeBlock = (
-    timeBlockKey: string,
-    selectAll: boolean
-  ) => {
-    const studentIds = students.map(
+  // Select all students
+  const selectAll = () => {
+    const allStudentIds = students.map(
       (student: any) => student?.id || student?._id
     );
-    setSelectedStudentsByTimeBlock((prev) => ({
-      ...prev,
-      [timeBlockKey]: selectAll ? studentIds : [],
-    }));
+    setSelectedStudents(allStudentIds);
+  };
+
+  // Deselect all students
+  const deselectAll = () => {
+    setSelectedStudents([]);
   };
 
   // Handle form submission
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!classSchedule) {
+  const handleSubmit = async () => {
+    if (!classSchedule || !currentTimeBlock) {
       alert("Class schedule not found");
       return;
     }
@@ -145,69 +125,39 @@ function AttendancePageSingleClass() {
     }
 
     const markedBy = user?._id || user?.id || "";
+    const classScheduleId = classSchedule?.id || classSchedule?._id || "";
 
-    if (!courseId || !markedBy) {
+    if (!courseId || !markedBy || !sessionId || !classScheduleId) {
       alert("Missing required information");
       return;
     }
 
     try {
-      // Mark attendance for each timeblock
-      const allRequests: Promise<any>[] = [];
+      // Prepare students array with ALL students (both present and absent)
+      const allStudents = students.map((student: any) => {
+        const studentId = student?.id || student?._id;
+        const isPresent = selectedStudents.includes(studentId);
 
-      sessions.forEach((session: any, sessionIdx: number) => {
-        const timeBlocks = session?.timeBlocks || [];
-        const sessionId = session?.id || session?._id;
-
-        timeBlocks.forEach((timeBlock: any, blockIdx: number) => {
-          const timeBlockKey = getTimeBlockKey(sessionIdx, blockIdx);
-          const selectedStudentIds =
-            selectedStudentsByTimeBlock[timeBlockKey] || [];
-
-          // Prepare students array with ALL students (both present and absent)
-          const allStudents = (students as any[]).map((student: any) => {
-            const studentId = student?.id || student?._id;
-            const isPresent = selectedStudentIds.includes(studentId);
-
-            return {
-              studentId: studentId,
-              status: isPresent ? "present" : "absent",
-            };
-          });
-
-          // Filter out any students without valid studentId
-          const validStudents = allStudents.filter(
-            (student) => student.studentId && student.studentId.trim() !== ""
-          );
-
-          const payload = {
-            courseId: courseId,
-            sessionId: sessionId,
-            timeBlockKey: timeBlockKey,
-            markedBy: markedBy,
-            students: validStudents,
-          };
-
-          console.log("Attendance Payload:", payload);
-
-          const fixedPayload = {
-            ...payload,
-            sessionId: String(payload.sessionId),
-            timeBlockKey: String(payload.timeBlockKey),
-            markedBy: String(payload.markedBy),
-            students: payload.students.map((s: any) => ({
-              studentId: String(s.studentId),
-              status: s.status === "present" ? "present" : "absent",
-            })) as { studentId: string; status: "present" | "absent" }[],
-          };
-
-          allRequests.push(markBulkAttendance(fixedPayload).unwrap());
-        });
+        return {
+          studentId: studentId,
+          status: isPresent ? ("present" as const) : ("absent" as const),
+        };
       });
 
-      // Wait for all requests to complete
-      await Promise.all(allRequests);
-      alert("Attendance marked successfully for all classes!");
+      const payload = {
+        classScheduleId: classScheduleId,
+        courseId: courseId,
+        sessionId: sessionId,
+        startDate: currentTimeBlock.startDate,
+        startTime: currentTimeBlock.startTime,
+        markedBy: markedBy,
+        students: allStudents,
+      };
+
+      console.log("Attendance Payload:", payload);
+
+      await markBulkAttendance(payload).unwrap();
+      alert("Attendance marked successfully!");
       router.push("/dashboard/class-schedule");
     } catch (error: any) {
       console.error("Error marking attendance:", error);
@@ -258,205 +208,213 @@ function AttendancePageSingleClass() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Mark Attendance
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Course: {classSchedule?.course?.title || "—"}
-            </p>
-            <p className="text-gray-600">
-              Date: {classSchedule?.date || "—"} | Time:{" "}
-              {classSchedule?.time || "—"}
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">
+                📋 Mark Attendance
+              </h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-500">
+                    Course:
+                  </span>
+                  <span className="text-sm font-semibold text-blue-600">
+                    {classSchedule?.course?.title || "—"}
+                  </span>
+                </div>
+                {currentTimeBlock && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        Date:
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {currentTimeBlock.startDate || "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500">
+                        Time:
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {currentTimeBlock.startTime} -{" "}
+                        {currentTimeBlock.endTime}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <Link
+              href="/dashboard/class-schedule"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+            >
+              ← Back
+            </Link>
+          </div>
+        </div>
+
+        {!sessions.length || !students.length ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
+            <p className="text-blue-800 font-medium">
+              {!sessions.length
+                ? "No sessions configured for this class schedule."
+                : "No students assigned to this class schedule."}
             </p>
           </div>
-          <Link
-            href="/dashboard/class-schedule"
-            className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:border-gray-300 hover:text-gray-900 transition-colors"
-          >
-            Back
-          </Link>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {sessions.length === 0 || students.length === 0 ? (
-              <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                {sessions.length === 0
-                  ? "No sessions configured for this class schedule."
-                  : "No students assigned to this class schedule."}
+        ) : (
+          <>
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  Quick Actions
+                </h2>
+                <div className="flex gap-3">
+                  <button
+                    onClick={selectAll}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                  >
+                    ✓ Select All
+                  </button>
+                  <button
+                    onClick={deselectAll}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-sm"
+                  >
+                    ✗ Deselect All
+                  </button>
+                </div>
               </div>
-            ) : (
-              <>
-                {/* Grid Table for Attendance */}
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="sticky left-0 z-10 bg-gray-100 border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900 min-w-[200px]">
-                          Learner
-                        </th>
-                        {/* Column headers for each timeblock */}
-                        {sessions.map((session: any, sessionIdx: number) => {
-                          const timeBlocks = session?.timeBlocks || [];
-                          return timeBlocks.map(
-                            (timeBlock: any, blockIdx: number) => {
-                              const timeBlockKey = getTimeBlockKey(
-                                sessionIdx,
-                                blockIdx
-                              );
-                              return (
-                                <th
-                                  key={timeBlockKey}
-                                  className="border border-gray-300 bg-gray-100 px-3 py-3 text-center font-semibold text-gray-900 min-w-[120px]"
-                                >
-                                  <div className="text-sm">
-                                    <div className="font-medium">
-                                      Class {blockIdx + 1}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mt-1">
-                                      {timeBlock.startDate}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      {timeBlock.startTime} -{" "}
-                                      {timeBlock.endTime}
-                                    </div>
-                                  </div>
-                                </th>
-                              );
-                            }
-                          );
-                        })}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Student rows */}
-                      {students.map((student: any) => {
-                        const studentId = student?.id || student?._id;
-                        const studentName = student?.firstName || "Unknown";
-                        const studentLastName = student?.lastName || "";
-
-                        return (
-                          <tr key={studentId}>
-                            <td className="sticky left-0 z-10 bg-white border border-gray-300 px-4 py-3 font-medium text-gray-900">
-                              <div className="truncate">
-                                {studentName} {studentLastName}
-                              </div>
-                              <div className="text-xs text-gray-600 truncate">
-                                {student?.email || "—"}
-                              </div>
-                            </td>
-                            {/* Checkbox cells for each timeblock */}
-                            {sessions.map(
-                              (session: any, sessionIdx: number) => {
-                                const timeBlocks = session?.timeBlocks || [];
-                                return timeBlocks.map(
-                                  (timeBlock: any, blockIdx: number) => {
-                                    const timeBlockKey = getTimeBlockKey(
-                                      sessionIdx,
-                                      blockIdx
-                                    );
-                                    const selectedList =
-                                      selectedStudentsByTimeBlock[
-                                        timeBlockKey
-                                      ] || [];
-                                    const isPresent =
-                                      selectedList.includes(studentId);
-
-                                    return (
-                                      <td
-                                        key={`${timeBlockKey}-${studentId}`}
-                                        className="border border-gray-300 px-3 py-3 text-center"
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          className="h-5 w-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                          checked={isPresent}
-                                          onChange={(e) => {
-                                            console.log(
-                                              "Checkbox change event:",
-                                              {
-                                                timeBlockKey,
-                                                studentId,
-                                                checked: e.target.checked,
-                                                currentList: selectedList,
-                                              }
-                                            );
-                                            handleCheckboxChange(
-                                              timeBlockKey,
-                                              studentId
-                                            );
-                                          }}
-                                        />
-                                      </td>
-                                    );
-                                  }
-                                );
-                              }
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              <div className="flex items-center gap-4 p-4 bg-linear-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">Present</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {selectedStudents.length}
+                  </p>
                 </div>
-
-                {/* Summary info */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    {sessions.map((session: any, sessionIdx: number) => {
-                      const timeBlocks = session?.timeBlocks || [];
-                      return timeBlocks.map(
-                        (timeBlock: any, blockIdx: number) => {
-                          const timeBlockKey = getTimeBlockKey(
-                            sessionIdx,
-                            blockIdx
-                          );
-                          const totalSelected = (
-                            selectedStudentsByTimeBlock[timeBlockKey] || []
-                          ).length;
-                          return (
-                            <div
-                              key={timeBlockKey}
-                              className="p-3 rounded-lg bg-gray-50 border border-gray-200"
-                            >
-                              <div className="text-xs text-gray-600 font-medium">
-                                Class {blockIdx + 1}
-                              </div>
-                              <div className="text-lg font-bold text-primary-600 mt-1">
-                                {totalSelected}/{students.length}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                Present
-                              </div>
-                            </div>
-                          );
-                        }
-                      );
-                    })}
-                  </div>
+                <div className="h-12 w-px bg-gray-300"></div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">Absent</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {students.length - selectedStudents.length}
+                  </p>
                 </div>
-              </>
-            )}
-          </form>
+                <div className="h-12 w-px bg-gray-300"></div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">Total</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {students.length}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          {/* Submit Button - Outside form for better visibility */}
-          {sessions.length > 0 && students.length > 0 && (
-            <div className="flex items-center justify-center pt-6 mt-6 border-t-2 border-gray-200">
+            {/* Students List */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Students ({students.length})
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2">
+                {students.map((student: any) => {
+                  const studentId = student?.id || student?._id;
+                  const isSelected = selectedStudents.includes(studentId);
+
+                  return (
+                    <div
+                      key={studentId}
+                      onClick={() => toggleStudent(studentId)}
+                      className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-green-500 bg-green-50 shadow-md"
+                          : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+                      }`}
+                    >
+                      <div
+                        className={`shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center ${
+                          isSelected
+                            ? "bg-green-500 border-green-500"
+                            : "bg-white border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-4 h-4 text-white"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`font-semibold truncate ${
+                            isSelected ? "text-green-900" : "text-gray-900"
+                          }`}
+                        >
+                          {student?.firstName} {student?.lastName}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {student?.email}
+                        </p>
+                      </div>
+                      <div
+                        className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
+                          isSelected
+                            ? "bg-green-500 text-white"
+                            : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
+                        {isSelected ? "Present" : "Absent"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <button
-                type="button"
                 onClick={handleSubmit}
-                className="min-w-[200px] px-12 py-4 rounded-lg bg-blue-600 text-white text-lg font-bold uppercase tracking-wide hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl active:scale-95"
                 disabled={isSubmitting}
+                className="w-full py-4  text-white bg-primary-600 cursor-pointer hover:bg-primary-700 text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    SUBMITTING...
+                  </span>
+                ) : (
+                  "✓ SUBMIT ATTENDANCE"
+                )}
               </button>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

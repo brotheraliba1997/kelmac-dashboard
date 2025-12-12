@@ -2,6 +2,7 @@
 import { logout } from "@/app/redux/slices/auth";
 import { GetUserRoleName } from "@/app/utils/getUserRoleName";
 import { array } from "@/app/utils/sidebarJson";
+import { hasAnyPermission } from "@/app/utils/permissionChecker";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -36,11 +37,21 @@ function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {array
-            .filter((item: any) =>
-              item.role.includes(
-                GetUserRoleName(user?.role?._id || user?.role?.id)
-              )
-            )
+            .filter((item: any) => {
+              const userRoleName = GetUserRoleName(
+                user?.role?._id || user?.role?.id || user?.role
+              );
+              const hasRole = item.role.includes(userRoleName);
+
+              // If item has specific permissions, check those
+              if (item.permissions && item.permissions.length > 0) {
+                const hasPermissions = hasAnyPermission(user, item.permissions);
+                return hasRole && hasPermissions;
+              }
+
+              // Otherwise just check role
+              return hasRole;
+            })
             .map((item, index) => {
               const isActive = pathName.startsWith(item?.path);
               return (

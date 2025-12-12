@@ -107,7 +107,7 @@ function ClassSchedule() {
       label: "Actions",
       render: (item: any) => (
         <div className="flex items-center gap-3">
-          <Link href={`/dashboard/attendance/${item?.id}`} title="Attendance">
+          <Link href={`/dashboard/classes/${item?.id}`} title="Attendance">
             <SiGoogleclassroom className="text-primary-600 hover:text-primary-700 cursor-pointer text-lg" />
           </Link>
           <button

@@ -318,7 +318,7 @@ export default function CourseSessionsManager({
             <div key={index} className="card mb-3">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start">
-                  <div className="flex-grow-1">
+                  <div className="grow">
                     <div className="d-flex align-items-center mb-2">
                       {session.color && (
                         <div
