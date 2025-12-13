@@ -184,9 +184,9 @@ function AssessmentPageContent() {
               setSelectedRecord(item);
               setIsApprovalModalOpen(true);
             }}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="inline-flex bg-primary-600 hover:bg-primary-700 items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded text-white"
           >
-            Approve/Reject
+            Approve or Reject
           </button>
         ) : null,
     },

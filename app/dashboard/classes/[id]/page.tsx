@@ -86,27 +86,57 @@ function ClassDetailPage() {
   const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
   // Helper function to check if attendance button should be disabled
-  const isAttendanceDisabled = (blockIdx: number, startDate: string) => {
-    // Check if index is marked as true in ClassLeftList (class already done)
-    const isClassDone = classLeftList[blockIdx] === true;
-    // Check if the date is not today
-    const isNotToday = startDate !== today;
+  const isAttendanceDisabled = (
+    blockIdx: number,
+    endDate?: string,
+    endTime?: string
+  ) => {
+    const now = new Date();
+    const currentDate = new Date(now.toISOString().split("T")[0]); // midnight today
 
-    return isClassDone || isNotToday;
+    if (!endDate) return true;
+    const end = new Date(endDate);
+
+    // Disable before the end date
+    if (currentDate < end) return true;
+
+    // Disable after the end date
+    if (currentDate > end) return true;
+
+    // If today is the end date and current time is before endTime, disable
+    if (currentDate.getTime() === end.getTime() && endTime) {
+      const [h, m] = endTime.split(":").map(Number);
+      const endDateTime = new Date(end);
+      endDateTime.setHours(h || 0, m || 0, 0, 0);
+      if (now < endDateTime) return true;
+    }
+
+    // Otherwise enabled
+    return false;
   };
 
   // Helper function to get disable reason
-  const getDisableReason = (blockIdx: number, startDate: string) => {
-    const isClassDone = classLeftList[blockIdx] === true;
-    const isNotToday = startDate !== today;
+  const getDisableReason = (
+    blockIdx: number,
+    endDate?: string,
+    endTime?: string
+  ) => {
+    const now = new Date();
+    const currentDate = new Date(now.toISOString().split("T")[0]);
+    const end = endDate ? new Date(endDate) : undefined;
 
-    if (isClassDone && isNotToday) {
-      return "Completed • Not today";
-    } else if (isClassDone) {
-      return "Completed";
-    } else if (isNotToday) {
-      return "Not today";
+    if (!end) return "Attendance unavailable (invalid dates)";
+
+    if (currentDate < end) return "Not started yet";
+    if (currentDate > end) return "Session finished";
+
+    if (currentDate.getTime() === end.getTime() && endTime) {
+      const [h, m] = endTime.split(":").map(Number);
+      const endDateTime = new Date(end);
+      endDateTime.setHours(h || 0, m || 0, 0, 0);
+      if (now < endDateTime) return "Available after end time";
     }
+
     return "";
   };
 
@@ -133,9 +163,14 @@ function ClassDetailPage() {
         blockIdx: blockIdx,
         isAttendanceDisabled: isAttendanceDisabled(
           blockIdx,
-          timeBlock?.startDate
+          timeBlock?.endDate,
+          timeBlock?.endTime
         ),
-        disableReason: getDisableReason(blockIdx, timeBlock?.startDate),
+        disableReason: getDisableReason(
+          blockIdx,
+          timeBlock?.endDate,
+          timeBlock?.endTime
+        ),
       });
     });
   });
@@ -196,6 +231,25 @@ function ClassDetailPage() {
       ),
     },
     {
+      key: "status",
+      label: "Status",
+      render: (item: any) => {
+        const isClassDone =
+          item.blockIdx !== undefined && classLeftList[item.blockIdx] === true;
+        if (isClassDone) {
+          return <span className="text-green-700 font-medium">Completed</span>;
+        }
+        if (item.isAttendanceDisabled) {
+          return (
+            <span className="text-gray-600" title={item.disableReason}>
+              {item.disableReason || "Unavailable"}
+            </span>
+          );
+        }
+        return <span className="text-primary-700 font-medium">Available</span>;
+      },
+    },
+    {
       key: "duration",
       label: "Duration",
       render: (item: any) => (
@@ -223,24 +277,18 @@ function ClassDetailPage() {
       label: "Attendance",
       render: (item: any) => {
         const disabled = item.isAttendanceDisabled;
-        const isClassDone =
-          item.blockIdx !== undefined && classLeftList[item.blockIdx] === true;
-
-        // Show Assessment button when class is done for instructor, operator, corporate
-        if (isClassDone) {
-          const assessmentUrl = `/dashboard/assessment/${id}?startDate=${item.startDate}&startTime=${item.startTime}`;
+        if (!disabled) {
+          const attendanceUrl = `/dashboard/attendance/${id}?startDate=${item.startDate}&startTime=${item.startTime}`;
           return (
             <Link
-              href={assessmentUrl}
+              href={attendanceUrl}
               className="bg-primary-600 px-4 py-2 rounded hover:bg-primary-700 text-white font-medium"
             >
-              Assessment
+              Attendance
             </Link>
           );
-        }
-
-        // If disabled and not class done, show disabled button with tooltip
-        if (disabled) {
+        } else {
+          // If disabled and not class done, show disabled button with tooltip
           const reason = item.disableReason || "Attendance not available";
           return (
             <button
@@ -254,21 +302,6 @@ function ClassDetailPage() {
             </button>
           );
         }
-
-        // Only instructors can take attendance when enabled
-        if (isInstructor || isAdmin) {
-          return (
-            <Link
-              href={`/dashboard/attendance/${id}?startDate=${item.startDate}&startTime=${item.startTime}`}
-              className="bg-primary-600 px-4 py-2 rounded hover:bg-primary-700 text-white font-medium "
-            >
-              Attendance
-            </Link>
-          );
-        }
-
-        // Other roles see not allowed when attendance is enabled but they can't act
-        return <span className="text-xs text-gray-500">Not allowed</span>;
       },
     },
   ];

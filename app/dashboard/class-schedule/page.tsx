@@ -3,7 +3,13 @@ import React, { useState } from "react";
 import DynamicTable from "@/app/components/table/DynamicTableTailwind";
 import Link from "next/link";
 
-import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
+import {
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaPlus,
+  FaClipboardCheck,
+} from "react-icons/fa";
 import { useGetAllClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
 import { SiGoogleclassroom } from "react-icons/si";
 
@@ -107,9 +113,35 @@ function ClassSchedule() {
       label: "Actions",
       render: (item: any) => (
         <div className="flex items-center gap-3">
-          <Link href={`/dashboard/classes/${item?.id}`} title="Attendance">
-            <SiGoogleclassroom className="text-primary-600 hover:text-primary-700 cursor-pointer text-lg" />
-          </Link>
+          {(() => {
+            const classLeftList = Array.isArray(item?.ClassLeftList)
+              ? item.ClassLeftList
+              : [];
+            const allDone =
+              classLeftList.length > 0 && classLeftList.every(Boolean);
+            if (!allDone)
+              return (
+                <Link
+                  href={`/dashboard/classes/${item?.id}`}
+                  title="Attendance"
+                  className="inline-flex bg-primary-600 hover:bg-primary-700 items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded text-white"
+                >
+                  <SiGoogleclassroom className="text-base" />
+                  <span>Attendance</span>
+                </Link>
+              );
+            return (
+              <Link
+                href={`/dashboard/assessment/${item?.id}`}
+                title="Assessment"
+                className="inline-flex bg-primary-600 hover:bg-primary-700  items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded bg-primary-600 text-white hover:bg-primary-700 shadow-sm"
+              >
+                <FaClipboardCheck className="text-base" />
+                Assessment
+              </Link>
+            );
+          })()}
+
           <button
             title="View"
             className="text-primary-600 hover:text-primary-700"

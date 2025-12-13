@@ -13,6 +13,7 @@ const roleOptions = [
   { value: 3, label: "Instructor" },
   { value: 4, label: "Corporate" },
   { value: 5, label: "Finance" },
+  { value: 6, label: "Operator" },
 ];
 
 const statusOptions = [
