@@ -230,25 +230,25 @@ function ClassDetailPage() {
         </span>
       ),
     },
-    {
-      key: "status",
-      label: "Status",
-      render: (item: any) => {
-        const isClassDone =
-          item.blockIdx !== undefined && classLeftList[item.blockIdx] === true;
-        if (isClassDone) {
-          return <span className="text-green-700 font-medium">Completed</span>;
-        }
-        if (item.isAttendanceDisabled) {
-          return (
-            <span className="text-gray-600" title={item.disableReason}>
-              {item.disableReason || "Unavailable"}
-            </span>
-          );
-        }
-        return <span className="text-primary-700 font-medium">Available</span>;
-      },
-    },
+    // {
+    //   key: "status",
+    //   label: "Status",
+    //   render: (item: any) => {
+    //     const isClassDone =
+    //       item.blockIdx !== undefined && classLeftList[item.blockIdx] === true;
+    //     if (isClassDone) {
+    //       return <span className="text-green-700 font-medium">Completed</span>;
+    //     }
+    //     if (item.isAttendanceDisabled) {
+    //       return (
+    //         <span className="text-gray-600" title={item.disableReason}>
+    //           {item.disableReason || "Unavailable"}
+    //         </span>
+    //       );
+    //     }
+    //     return <span className="text-primary-700 font-medium">Available</span>;
+    //   },
+    // },
     {
       key: "duration",
       label: "Duration",
@@ -275,34 +275,40 @@ function ClassDetailPage() {
     {
       key: "attendance",
       label: "Attendance",
-      render: (item: any) => {
-        const disabled = item.isAttendanceDisabled;
-        if (!disabled) {
-          const attendanceUrl = `/dashboard/attendance/${id}?startDate=${item.startDate}&startTime=${item.startTime}`;
-          return (
-            <Link
-              href={attendanceUrl}
-              className="bg-primary-600 px-4 py-2 rounded hover:bg-primary-700 text-white font-medium"
-            >
-              Attendance
-            </Link>
-          );
-        } else {
-          // If disabled and not class done, show disabled button with tooltip
-          const reason = item.disableReason || "Attendance not available";
-          return (
-            <button
-              type="button"
-              title={reason}
-              aria-label={reason}
-              disabled
-              className="bg-gray-300 text-gray-600 px-4 py-2 rounded cursor-not-allowed"
-            >
-              Attendance
-            </button>
-          );
-        }
-      },
+      render: (item: any) => (
+        <Link
+          href={`/dashboard/attendance/${id}?startDate=${item.startDate}&startTime=${item.startTime}`}
+          className="bg-primary-600 px-4 py-2 rounded hover:bg-primary-700 text-white font-medium"
+        >
+          Attendance
+        </Link>
+        // const disabled = item.isAttendanceDisabled;
+        // if (!disabled) {
+        //   const attendanceUrl = `/dashboard/attendance/${id}?startDate=${item.startDate}&startTime=${item.startTime}`;
+        //   return (
+        //     <Link
+        //       href={attendanceUrl}
+        //       className="bg-primary-600 px-4 py-2 rounded hover:bg-primary-700 text-white font-medium"
+        //     >
+        //       Attendance
+        //     </Link>
+        //   );
+        // } else {
+        //   // If disabled and not class done, show disabled button with tooltip
+        //   const reason = item.disableReason || "Attendance not available";
+        //   return (
+        //     <button
+        //       type="button"
+        //       title={reason}
+        //       aria-label={reason}
+        //       disabled
+        //       className="bg-gray-300 text-gray-600 px-4 py-2 rounded cursor-not-allowed"
+        //     >
+        //       Attendance
+        //     </button>
+        //   );
+        // }
+      ),
     },
   ];
 
