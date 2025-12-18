@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import DynamicTable from "@/app/components/table/DynamicTableTailwind";
+import DynamicTable, {
+  FilterConfig,
+} from "@/app/components/table/DynamicTableTailwind";
 import Link from "next/link";
 
 import {
@@ -10,22 +12,31 @@ import {
   FaPlus,
   FaClipboardCheck,
 } from "react-icons/fa";
-import { useGetAllClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
+import { useGetPaginatedClassSchedulesQuery } from "@/app/redux/services/classScheduleApi";
 import { SiGoogleclassroom } from "react-icons/si";
+import { useRouter } from "next/navigation";
 
 function ClassSchedule() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [tableFilters, setTableFilters] = useState({
+    search: undefined,
+    startDate: undefined,
+    endDate: undefined,
+    status: undefined,
+    studentId: undefined,
+    courseId: undefined,
+    instructorId: undefined,
+    limit: 10,
+    page: 1,
+  });
 
-  const { data, isLoading, error } = useGetAllClassSchedulesQuery();
+  const { data, isLoading, error } =
+    useGetPaginatedClassSchedulesQuery(tableFilters);
 
-  const schedules = (data as any)?.data || data || [];
-  const totalEntries = schedules.length;
-  const totalPages = Math.ceil(totalEntries / pageSize);
+  const schedules = (data as any)?.data || (data as any)?.items || data || [];
+  const totalEntries = (data as any)?.meta?.total || schedules.length || 0;
+  const totalPages = Math.ceil(totalEntries / (tableFilters.limit || 10)) || 1;
 
-  const indexOfLastItem = page * pageSize;
-  const indexOfFirstItem = indexOfLastItem - pageSize;
-  const currentData = schedules.slice(indexOfFirstItem, indexOfLastItem);
+  const currentData = schedules; // server paginated
 
   const columns = [
     {
@@ -41,9 +52,16 @@ function ClassSchedule() {
       key: "instructor",
       label: "Instructor",
       render: (item: any) => (
-        <div className="text-primary-600 font-medium">
-          {item?.instructor?.firstName
-            ? `${item.instructor.firstName} ${item.instructor.lastName}`
+        <div className="text-primary-600 font-medium capitalize">
+          {item?.course?.sessions.find((x: any) => x.id == item?.sessionId)
+            ?.instructor?.firstName
+            ? `${
+                item?.course?.sessions.find((x: any) => x.id == item?.sessionId)
+                  ?.instructor?.firstName
+              } ${
+                item?.course?.sessions.find((x: any) => x.id == item?.sessionId)
+                  ?.instructor?.lastName
+              }`
             : "—"}
         </div>
       ),
@@ -159,6 +177,59 @@ function ClassSchedule() {
     },
   ];
 
+  // Filters configuration similar to courses page
+  const scheduleFilters: FilterConfig[] = [
+    {
+      key: "search",
+      label: "Search",
+      type: "text",
+      placeholder: "Search schedules...",
+    },
+    { key: "startDate", label: "Start Date", type: "date" },
+    { key: "endDate", label: "End Date", type: "date" },
+    {
+      key: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "", label: "All" },
+        { value: "scheduled", label: "Scheduled" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    {
+      key: "studentId",
+      label: "Student ID",
+      type: "text",
+      placeholder: "Student ID",
+    },
+    {
+      key: "courseId",
+      label: "Course ID",
+      type: "text",
+      placeholder: "Course ID",
+    },
+    {
+      key: "instructorId",
+      label: "Instructor ID",
+      type: "text",
+      placeholder: "Instructor ID",
+    },
+  ];
+
+  const handleFilterChange = (filters: Record<string, unknown>) => {
+    const typed = filters as Partial<typeof tableFilters>;
+    const keys = Object.keys(filters);
+    const shouldResetPage = keys.some((k) => k !== "page" && k !== "limit");
+    setTableFilters((prev) => ({
+      ...prev,
+      ...typed,
+      page: shouldResetPage ? 1 : typed.page ?? prev.page,
+      limit: typed.limit ?? prev.limit,
+    }));
+  };
+  const router = useRouter();
   return (
     <div className="page-wrapper" style={{ minHeight: 730 }}>
       <div className="content container-fluid">
@@ -168,16 +239,23 @@ function ClassSchedule() {
           loading={isLoading}
           pageTitle="Class Schedule"
           error={error ? "Failed to load schedules" : null}
+          filters={scheduleFilters}
+          onFilterChange={handleFilterChange}
           pagination={{
             total: totalEntries,
-            currentPage: page,
+            currentPage: tableFilters.page,
             totalPages: totalPages,
-            pageSize: pageSize,
-            onPageChange: setPage,
-            onPageSizeChange: setPageSize,
+            pageSize: tableFilters.limit,
+            onPageChange: (p: number) =>
+              setTableFilters((prev) => ({ ...prev, page: p })),
+            onPageSizeChange: (size: number) => {
+              setTableFilters((prev) => ({ ...prev, limit: size, page: 1 }));
+            },
             pageSizeOptions: [5, 10, 20, 50],
           }}
-          onAdd={() => {}}
+          onAdd={() => {
+            router.push("/dashboard/class-schedule/create");
+          }}
           addButtonLabel="Add Schedule"
         />
       </div>

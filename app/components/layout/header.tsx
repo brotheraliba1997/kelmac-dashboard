@@ -258,7 +258,7 @@ function Header() {
                 setUserMenuOpen(!userMenuOpen);
                 setNotificationOpen(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 transition-colors group"
+              className="flex items-center gap-2 px-3 py-2 -my-1 rounded-lg bg-primary-600 hover:bg-primary-700 transition-colors group"
               title="User Menu"
             >
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0">

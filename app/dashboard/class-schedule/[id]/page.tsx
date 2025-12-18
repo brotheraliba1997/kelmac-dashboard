@@ -1,17 +1,28 @@
 "use client";
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import DynamicForm, { FormField } from "@/app/components/shared/DynamicForm";
-import { useCreateClassScheduleMutation } from "@/app/redux/services/classScheduleApi";
+import {
+  useGetClassScheduleByIdQuery,
+  useUpdateClassScheduleMutation,
+} from "@/app/redux/services/classScheduleApi";
 import { useGetAllCoursesQuery } from "@/app/redux/services/courseApi";
 import { useGetUsersQuery } from "@/app/redux/services/userApi";
 
-export default function CreateClassSchedulePage() {
+export default function EditClassSchedulePage() {
   const router = useRouter();
-  const [createClassSchedule, { isLoading }] = useCreateClassScheduleMutation();
+  const params = useParams();
+  const id = params?.id as string;
 
+  const { data: scheduleData, isLoading: loadingSchedule } =
+    useGetClassScheduleByIdQuery(id, { skip: !id });
   const { data: coursesData } = useGetAllCoursesQuery<any>({});
   const { data: usersData } = useGetUsersQuery({});
+
+  const schedule = (scheduleData as any)?.data || scheduleData;
+
+  const [updateClassSchedule, { isLoading: isUpdating }] =
+    useUpdateClassScheduleMutation();
 
   const courseOptions = useMemo(
     () =>
@@ -109,18 +120,20 @@ export default function CreateClassSchedulePage() {
   ];
 
   const initialData = {
-    course: "",
-    instructor: "",
-    students: "",
-    date: "",
-    time: "",
-    duration: 60,
-    securityKey: "",
-    status: "scheduled",
+    course: schedule?.course?._id || schedule?.course?.id || "",
+    instructor: schedule?.instructor?._id || schedule?.instructor?.id || "",
+    students: Array.isArray(schedule?.students)
+      ? schedule?.students?.[0] || ""
+      : schedule?.students || "",
+    date: schedule?.date || "",
+    time: schedule?.time || "",
+    duration: schedule?.duration || 60,
+    securityKey: schedule?.securityKey || "",
+    status: schedule?.status || "scheduled",
   };
 
   const handleSubmit = async (payload: Record<string, any>) => {
-    await createClassSchedule(payload).unwrap();
+    await updateClassSchedule({ id, body: payload }).unwrap();
     router.push("/dashboard/class-schedule");
   };
 
@@ -129,15 +142,15 @@ export default function CreateClassSchedulePage() {
       <div className="content container-fluid">
         <DynamicForm
           config={{
-            title: "Create Class Schedule",
-            submitText: "Create Schedule",
+            title: "Edit Class Schedule",
+            submitText: "Update Schedule",
             fields,
             columns: 2,
           }}
           initialData={initialData}
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
-          loading={isLoading}
+          loading={loadingSchedule || isUpdating}
         />
       </div>
     </div>

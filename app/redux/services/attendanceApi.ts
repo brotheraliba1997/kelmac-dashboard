@@ -1,10 +1,11 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuth } from "./api";
+import { classScheduleApi } from "./classScheduleApi";
 
 export const attendanceApi = createApi({
   reducerPath: "attendanceApi",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["Attendance"],
+  tagTypes: ["Attendance", "ClassSchedule"],
   endpoints: (builder) => ({
     // Get pass/fail assignment summary and results
     getPassFailCheckAssignment: builder.query<
@@ -54,7 +55,16 @@ export const attendanceApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Attendance"],
+      invalidatesTags: ["Attendance", "ClassSchedule"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Cross-invalidate class schedules so paginated list refetches
+          dispatch(classScheduleApi.util.invalidateTags(["ClassSchedule"]));
+        } catch (err) {
+          // ignore
+        }
+      },
     }),
     // Approve or reject certificate
     approveCertificate: builder.mutation<
