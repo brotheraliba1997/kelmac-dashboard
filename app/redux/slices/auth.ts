@@ -82,6 +82,7 @@ const slice = createSlice({
         (state, action: any) => {
           const { payload } = action;
           const data = payload as { user: any; token?: string };
+          // console.log("data in authApi", data);
           const roleId = getUserRole(data.user);
           const allowedRoles = [
             UserRole.ADMIN,
@@ -102,13 +103,29 @@ const slice = createSlice({
             return;
           }
 
-          state.user = data.user;
-          state.isAdmin = roleId === UserRole.ADMIN;
-          state.isInstructor = roleId === UserRole.INSTRUCTOR;
-          state.token = data.token ?? null;
-          state.isAuthenticated = !!(data.token && data.user);
-          localStorage.setItem("user", JSON.stringify(data.user));
-          localStorage.setItem("token", JSON.stringify(data.token));
+          // Ensure we have both user and token
+          if (!data.user || !data.token) {
+            console.error("Missing user or token in response:", {
+              user: !!data.user,
+              token: !!data.token,
+            });
+            return;
+          }
+
+          // Save to localStorage only in browser environment
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("user", JSON.stringify(data.user));
+              localStorage.setItem("token", JSON.stringify(data.token));
+              state.user = data.user;
+              state.isAdmin = roleId === UserRole.ADMIN;
+              state.isInstructor = roleId === UserRole.INSTRUCTOR;
+              state.token = data.token;
+              state.isAuthenticated = !!(data.token && data.user);
+            } catch (error) {
+              console.error("Error saving to localStorage:", error);
+            }
+          }
         }
       )
       .addMatcher(
