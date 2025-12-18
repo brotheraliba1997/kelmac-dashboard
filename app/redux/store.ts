@@ -27,6 +27,7 @@ import { classScheduleApi } from "./services/classScheduleApi";
 import { attendanceApi } from "./services/attendanceApi";
 import { categoryApi } from "./services/categoryApi";
 import { locationApi } from "./services/locationApi";
+import { enquiriesApi } from "./services/enquiriesApi";
 
 export const store = configureStore({
   reducer: {
@@ -57,6 +58,7 @@ export const store = configureStore({
     [categoryApi.reducerPath]: categoryApi.reducer,
     [locationApi.reducerPath]: locationApi.reducer,
     [purchaseOrderApi.reducerPath]: purchaseOrderApi.reducer,
+    [enquiriesApi.reducerPath]: enquiriesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -80,7 +82,8 @@ export const store = configureStore({
       attendanceApi.middleware,
       categoryApi.middleware,
       locationApi.middleware,
-      purchaseOrderApi.middleware
+      purchaseOrderApi.middleware,
+      enquiriesApi.middleware
     ),
 });
 setupListeners(store.dispatch);
