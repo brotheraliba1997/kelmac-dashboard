@@ -8,6 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { FaSignOutAlt } from "react-icons/fa";
+import { getSocket } from "@/app/utils/socket";
 
 function Sidebar() {
   const dispatch = useDispatch();
@@ -20,6 +21,8 @@ function Sidebar() {
   const logoutHandler = async () => {
     router.push("/login");
     dispatch(logout());
+    const socket = getSocket(token);
+    socket.disconnect();
   };
 
   const pathName = usePathname();
