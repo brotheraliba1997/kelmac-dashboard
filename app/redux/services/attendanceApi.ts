@@ -84,6 +84,35 @@ export const attendanceApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+    // Mark individual attendance with marks and notes
+    markIndividualAssigment: builder.mutation<
+      { success: boolean; message: string; data: any },
+      {
+        classScheduleId: string;
+        courseId: string;
+        sessionId: string;
+        studentId: string;
+        markedBy: string;
+        marks: number;
+        notes?: string;
+        pdfFileName?: string;
+      }
+    >({
+      query: (body) => ({
+        url: "/assigment",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Attendance", "ClassSchedule"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(classScheduleApi.util.invalidateTags(["ClassSchedule"]));
+        } catch (err) {
+          // ignore
+        }
+      },
+    }),
   }),
 });
 
@@ -91,4 +120,5 @@ export const {
   useMarkBulkAttendanceMutation,
   useGetPassFailCheckAssignmentQuery,
   useApproveCertificateMutation,
+  useMarkIndividualAssigmentMutation,
 } = attendanceApi;

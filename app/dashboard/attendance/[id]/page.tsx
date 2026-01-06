@@ -5,13 +5,27 @@ import { useSelector } from "react-redux";
 import { useGetClassScheduleByIdQuery } from "@/app/redux/services/classScheduleApi";
 import { useMarkBulkAttendanceMutation } from "@/app/redux/services/attendanceApi";
 import Link from "next/link";
+import MarkAttendanceModal from "@/app/components/shared/MarkAttendanceModal";
 
 function AttendancePageSingleClass() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = params?.id as string;
+  const [showModal, setShowModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState({} as any);
+  const [selectedStudentForMarking, setSelectedStudentForMarking] = useState(
+    [] as any
+  );
 
+  const handleViewDocument = (student: any) => {
+    setSelectedStudent(student);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
   // Get query parameters for filtering timeblock
   const startDateParam = searchParams.get("startDate");
   const startTimeParam = searchParams.get("startTime");
@@ -104,8 +118,11 @@ function AttendancePageSingleClass() {
 
   // Deselect all students
   const deselectAll = () => {
-    setSelectedStudents([]);
+    selectedStudentForMarking;
+    // selectedStudents;
+    setSelectedStudents([...selectedStudentForMarking]);
   };
+  let courseId = "";
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -115,7 +132,6 @@ function AttendancePageSingleClass() {
     }
 
     // Ensure courseId is only a string ID, not an object
-    let courseId = "";
     if (typeof classSchedule?.course === "string") {
       courseId = classSchedule.course;
     } else if (classSchedule?.course?._id) {
@@ -322,11 +338,15 @@ function AttendancePageSingleClass() {
                 {students.map((student: any) => {
                   const studentId = student?.id || student?._id;
                   const isSelected = selectedStudents.includes(studentId);
+                  const isSelectedMarking =
+                    selectedStudentForMarking.includes(studentId);
 
                   return (
                     <div
                       key={studentId}
-                      onClick={() => toggleStudent(studentId)}
+                      onClick={() =>
+                        !isSelectedMarking && toggleStudent(studentId)
+                      }
                       className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         isSelected
                           ? "border-green-500 bg-green-50 shadow-md"
@@ -366,6 +386,21 @@ function AttendancePageSingleClass() {
                           {student?.email}
                         </p>
                       </div>
+                      {isSelected && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDocument(student);
+                          }}
+                          className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
+                            isSelected
+                              ? "bg-green-500 text-white"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
+                        >
+                          Assessment
+                        </div>
+                      )}
                       <div
                         className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${
                           isSelected
@@ -416,6 +451,22 @@ function AttendancePageSingleClass() {
           </>
         )}
       </div>
+
+      <MarkAttendanceModal
+        show={showModal}
+        onClose={handleCloseModal}
+        classScheduleId={classSchedule.id}
+        courseId={classSchedule.course.id}
+        sessionId={sessionId}
+        studentId={selectedStudent?.id}
+        studentName={
+          selectedStudent?.firstName + " " + selectedStudent?.lastName || ""
+        }
+        setSelectedStudentForMarking={setSelectedStudentForMarking}
+        onSuccess={() => {
+          /* refresh data */
+        }}
+      />
     </div>
   );
 }
