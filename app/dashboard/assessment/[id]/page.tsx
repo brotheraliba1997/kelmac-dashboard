@@ -133,7 +133,8 @@ function AssessmentPageContent() {
     },
     { key: "totalClasses", label: "Classes" },
     { key: "presentCount", label: "Present" },
-    { key: "absentCount", label: "Absent" },
+    { key: "totalMarks", label: "Assignment Marks" },
+    // { key: "absentCount", label: "Absent" },
     {
       key: "result",
       label: "Result",
@@ -164,15 +165,15 @@ function AssessmentPageContent() {
         </span>
       ),
     },
-    {
-      key: "certificateId",
-      label: "Certificate ID",
-      render: (item: any) => (
-        <span className="text-gray-700 font-mono text-sm">
-          {item.certificateId || "—"}
-        </span>
-      ),
-    },
+    // {
+    //   key: "certificateId",
+    //   label: "Certificate ID",
+    //   render: (item: any) => (
+    //     <span className="text-gray-700 font-mono text-sm">
+    //       {item.certificateId || "—"}
+    //     </span>
+    //   ),
+    // },
     {
       key: "actions",
       label: "Actions",
