@@ -33,7 +33,6 @@ const MarkAttendanceModal: React.FC<MarkAttendanceModalProps> = ({
   const [formData, setFormData] = useState({
     marks: 1,
     notes: "",
-    pdfFileName: "",
   });
 
   const handleInputChange = (
@@ -56,12 +55,11 @@ const MarkAttendanceModal: React.FC<MarkAttendanceModalProps> = ({
         markedBy: user?._id || user?.id || "",
         marks: formData.marks,
         notes: formData.notes || undefined,
-        pdfFileName: formData.pdfFileName || undefined,
       };
 
       await markAttendance(payload).unwrap();
       setSelectedStudentForMarking((prev: any) => [...prev, studentId]);
-      setFormData({ marks: 0, notes: "", pdfFileName: "" });
+      setFormData({ marks: 0, notes: "" });
       onSuccess?.();
       onClose();
     } catch (error: any) {
@@ -110,21 +108,6 @@ const MarkAttendanceModal: React.FC<MarkAttendanceModalProps> = ({
             rows={3}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:bg-gray-100"
             placeholder="e.g., Student arrived 10 minutes late"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            PDF File Name
-          </label>
-          <input
-            type="text"
-            name="pdfFileName"
-            value={formData.pdfFileName}
-            onChange={handleInputChange}
-            disabled={isLoading}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:bg-gray-100"
-            placeholder="e.g., Certificate No. 1.pdf"
           />
         </div>
 

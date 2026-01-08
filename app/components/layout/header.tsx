@@ -21,12 +21,15 @@ function Header() {
   // Get user initials
   const getUserInitials = () => {
     if (!user) return "SA";
-    const name = user.name || user.email || "User";
-    const parts = name.split(" ");
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+    // const name = user.name || user.email || "User";
+    // const parts = name.split(" ");
+    // if (parts.length > 1) {
+    //   return (parts[0][0] + parts[1][0]).toUpperCase();
+    // }
+    return (
+      user?.firstName?.substring(0, 1).toUpperCase() +
+      user?.lastName?.substring(0, 1).toUpperCase()
+    );
   };
 
   // Get display name
